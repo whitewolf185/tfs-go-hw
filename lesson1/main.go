@@ -18,22 +18,25 @@ func createPic(size int32, char string, times int32) {
 		times = 1
 	}
 
+	var result string
+
 	for k := 0; k < int(times); k++ {
 		for i := 0; i < int(size); i++ {
 			for j := 0; j < int(size); j++ {
 				switch {
 				case i == 0 || i == int(size)-1:
-					fmt.Printf("%s", char)
+					result += char
 				case i == j || i == int(size)-j-1:
-					fmt.Printf("%s", char)
+					result += char
 				default:
-					fmt.Printf("%s", " ")
+					result += " "
 				}
 			}
-			fmt.Println("")
+			fmt.Println(result)
+			result = ""
 		}
-		fmt.Println("")
-		fmt.Println("")
+		fmt.Println()
+		fmt.Println()
 	}
 }
 
