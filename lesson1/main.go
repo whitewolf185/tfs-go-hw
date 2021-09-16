@@ -1,32 +1,91 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 const (
 	PARAMETERS = 3
 )
 
-func createPic(size int32, char string, times int32) {
-	// init
-	if size == 0 {
-		size = 15
-	}
-	if char == "" {
-		char = "X"
-	}
-	if times == 0 {
-		times = 1
+func createPic(values []string) {
+	char := "X"
+	times := 1
+	size := 15
+
+	if len(values) > 0 {
+		for _, value := range values {
+			var (
+				param string
+				i     int
+			)
+
+			for i = 0; value[i] != '='; i++ {
+				param += string(value[i])
+			}
+			i++
+
+			switch param {
+			case "size":
+				var res string
+				for ; i < len(value); i++ {
+					res += string(value[i])
+				}
+				val, err := strconv.Atoi(res)
+				if err == nil {
+					size = val
+				} else {
+					fmt.Println("Что-то не так с цифрами")
+				}
+
+				if size > 0 && size%2 == 1 {
+					fmt.Println("size = ", size)
+				} else {
+					size = 15
+					fmt.Println("Значение сброшено до начального. Size = 15")
+				}
+
+			case "char":
+				char = string(value[i])
+				fmt.Println("Поле char введено. Сhar = ", char)
+
+			case "times":
+				var res string
+				for ; i < len(value); i++ {
+					res += string(value[i])
+				}
+				val, err := strconv.Atoi(res)
+				if err == nil {
+					times = val
+				} else {
+					fmt.Println("Что-то не так с цифрами")
+				}
+
+				if times > 0 {
+					fmt.Println("Поле times введено. Times = ", times)
+				} else {
+					times = 1
+					fmt.Println("Значение сброшено до начального. Times = 1")
+				}
+
+			default:
+				fmt.Println("Значения сброшены до начальных")
+				times = 1
+				size = 15
+				char = "X"
+			}
+		}
 	}
 
 	var result string
-
-	for k := 0; k < int(times); k++ {
-		for i := 0; i < int(size); i++ {
-			for j := 0; j < int(size); j++ {
+	for k := 0; k < times; k++ {
+		for i := 0; i < size; i++ {
+			for j := 0; j < size; j++ {
 				switch {
-				case i == 0 || i == int(size)-1:
+				case i == 0 || i == size-1:
 					result += char
-				case i == j || i == int(size)-j-1:
+				case i == j || i == size-j-1:
 					result += char
 				default:
 					result += " "
@@ -40,75 +99,30 @@ func createPic(size int32, char string, times int32) {
 	}
 }
 
-func enterVarStr() string {
-	var res string
-	_, err := fmt.Scanf("%s", &res)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return res
-}
-
-func enterVarInt() int32 {
-	var res int32
-	_, err := fmt.Scanf("%d", &res)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return res
-}
-
 func main() {
 	fmt.Printf("Здравствтуй пользователь!\nДля работы данной программы можно ввести %d параметра:\n1.size (вводите, пожалуйста, только нечетные числа больше 0)\n2.char\n3.times\n"+
-		"Чтобы инициализировать параметры, вводите их название и число в формате <name> <number || char>\nЕсли вы хотите закончить ввод, напишите end\n", PARAMETERS)
+		"Чтобы инициализировать параметры, вводите их название и число в формате <name>=<number || char>. Верно будет последнее введенное значение.\nЕсли вы хотите закончить ввод, напишите end\n", PARAMETERS)
 	// command
 	var (
 		param string
 	)
 
 	// options
-	var (
-		size  int32
-		char  string
-		times int32
-	)
+
+	var args []string
 
 	for {
-		param = enterVarStr()
+		_, err := fmt.Scanf("%s", &param)
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		if param == "end" {
 			break
 		}
 
-		switch param {
-		case "size":
-			size = enterVarInt()
-			if size > int32(0) && size%2 == 1 {
-				fmt.Println("Поле size введено. Size = ", size)
-			} else {
-				size = 0
-				fmt.Println("Попробуйте еще раз")
-			}
-
-		case "char":
-			char = string(enterVarStr()[0])
-			fmt.Println("Поле char введено. Сhar = ", char)
-
-		case "times":
-			times = enterVarInt()
-			if times > 0 {
-				fmt.Println("Поле char введено. Times = ", times)
-			} else {
-				times = 0
-				fmt.Println("Попробуйте еще раз")
-			}
-
-		default:
-			fmt.Println("Попробуйте еще раз")
-		}
+		args = append(args, param)
 	}
 
-	createPic(size, char, times)
+	createPic(args)
 }
