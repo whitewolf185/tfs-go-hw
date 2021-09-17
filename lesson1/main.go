@@ -4,57 +4,73 @@ import (
 	"fmt"
 )
 
-const (
-	PARAMETERS = 3
+type T func()
+
+var (
+	charVar  string
+	timesVar int
+	sizeVar  int
 )
 
-var values map[string]int32
+func size() {
+	fmt.Println("Напишите параметр size")
+	_, err := fmt.Scanf("%d", &sizeVar)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
 
-func createPic() {
-	char := "X"
-	times := 1
-	size := 15
+func times() {
+	fmt.Println("Напишите параметр times")
+	_, err := fmt.Scanf("%d", &timesVar)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func char() {
+	fmt.Println("Напишите параметр char")
+	_, err := fmt.Scanf("%s", &charVar)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func createPic(values ...T) {
+	charVar = "X"
+	timesVar = 1
+	sizeVar = 15
+
 	if len(values) > 0 {
-		value, ok := values["char"]
-		if ok {
-			char = string(value)
+		for _, value := range values {
+			value()
 		}
 
-		value, ok = values["size"]
-		if ok {
-			size = int(value)
-		}
-
-		value, ok = values["times"]
-		if ok {
-			times = int(value)
-		}
-
-		if size > 0 && size%2 == 1 {
-			fmt.Println("size = ", size)
+		if sizeVar > 0 && sizeVar%2 == 1 {
+			fmt.Println("size = ", sizeVar)
 		} else {
-			size = 15
+			sizeVar = 15
 			fmt.Println("Значение сброшено до начального. Size = 15")
 		}
 
-		fmt.Println("Сhar = ", char)
+		fmt.Println("Сhar = ", charVar)
 
-		if times > 0 {
-			fmt.Println("Times = ", times)
+		if timesVar > 0 {
+			fmt.Println("Times = ", timesVar)
 		} else {
-			times = 1
+			timesVar = 1
 			fmt.Println("Значение сброшено до начального. Times = 1")
 		}
 	}
 	var result string
-	for k := 0; k < times; k++ {
-		for i := 0; i < size; i++ {
-			for j := 0; j < size; j++ {
+	for k := 0; k < timesVar; k++ {
+		for i := 0; i < sizeVar; i++ {
+			for j := 0; j < sizeVar; j++ {
 				switch {
-				case i == 0 || i == size-1:
-					result += char
-				case i == j || i == size-j-1:
-					result += char
+				case i == 0 || i == sizeVar-1:
+					result += charVar
+				case i == j || i == sizeVar-j-1:
+					result += charVar
 				default:
 					result += " "
 				}
@@ -68,15 +84,18 @@ func createPic() {
 }
 
 func main() {
-	values = make(map[string]int32)
-	fmt.Printf("Здравствтуй пользователь!\nДля работы данной программы можно ввести %d параметра:\n1.size (вводите, пожалуйста, только нечетные числа больше 0)\n2.char\n3.times\n"+
-		"Чтобы инициализировать параметры, вводите их название и число в формате <name> <number || char>. Верно будет последнее введенное значение.\nЕсли вы хотите закончить ввод, напишите end\n", PARAMETERS)
+	fmt.Printf("Здравствтуй пользователь!\nВведите данные, которые вы хотите изменить. Можно изменить параметры:\n" +
+		"1.size по умолнанию = 15\n" +
+		"2.char по умолчанию = X\n" +
+		"3.times по умолчанию = 1\n" +
+		"Если вы хотите закончить ввод, напишите end\n")
 	// command
 	var (
 		param string
-		char  rune
-		num   int32
 	)
+
+	flag := false
+	var values []T
 
 	for {
 		_, err := fmt.Scanf("%s", &param)
@@ -90,21 +109,20 @@ func main() {
 
 		switch param {
 		case "char":
-			_, err := fmt.Scanf("%c\n", &char)
-			if err != nil {
-				fmt.Println(err)
-			}
+			flag = true
+			values = append(values, char)
 
-			values["char"] = char
-
-		default:
-			_, err := fmt.Scanf("%d", &num)
-			if err != nil {
-				fmt.Println(err)
-			}
-			values[param] = num
+		case "times":
+			flag = true
+			values = append(values, times)
+		case "size":
+			values = append(values, size)
+			flag = true
 		}
 	}
-
-	createPic()
+	if flag {
+		createPic(values...)
+	} else {
+		createPic()
+	}
 }
