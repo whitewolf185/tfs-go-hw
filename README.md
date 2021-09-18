@@ -4,4 +4,6 @@
 ------
 
 ### Домашнее задание №1
-`lesson 1/main.go`
+```diff
++ lesson1/main.go approved
+```  

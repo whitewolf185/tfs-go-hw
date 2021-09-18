@@ -10,7 +10,7 @@ linters:
     - varcheck
     # - misspell
     - nolintlint
-    # - goimports
+    - goimports
     - nakedret
     - unconvert
     - whitespace
