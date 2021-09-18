@@ -5,5 +5,5 @@
 
 ### Домашнее задание №1
 ```diff
-+ lesson1/main.go approved
+lesson1/main.go + approved
 ```  
