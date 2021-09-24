@@ -6,17 +6,21 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 )
 
-//---------PathReader class--------------
+// ---------PathReader class--------------
 
 type PathReader struct {
-	fileENV string
-	File    *os.File
+	fileENV    string
+	InFile     *os.File
+	outputPath string
 }
 
 func (p *PathReader) Constructor() {
 	p.fileENV = "FILE"
+	p.outputPath = "D:/Documents/tfs-go-hw/lesson2/output.json"
 }
 
 func (p PathReader) readFromUser() (string, bool) {
@@ -25,10 +29,8 @@ func (p PathReader) readFromUser() (string, bool) {
 	_, err := fmt.Scanf("%s", &fileUser)
 	if err == nil {
 		return fileUser, true
-	} else {
-		panic(err)
-		return "", false
 	}
+	panic(err)
 }
 
 func (p PathReader) readingArgs() (string, bool) {
@@ -36,9 +38,8 @@ func (p PathReader) readingArgs() (string, bool) {
 	flag.Parse()
 
 	if fileFlag == nil {
-		er := fmt.Errorf("Ошибка указателя fileFlag. func readingArgs()\n")
+		er := fmt.Errorf("%s", "Ошибка указателя fileFlag. func readingArgs()\n")
 		panic(er)
-		return "", false
 	}
 
 	if *fileFlag != "" {
@@ -60,7 +61,7 @@ func (p *PathReader) ReadPathFile() error {
 	DEBUGprinter("filePath:", filePath)
 
 	var errF error
-	p.File, errF = os.Open(filePath)
+	p.InFile, errF = os.Open(filePath)
 	for errF != nil {
 		if errors.Is(errF, os.ErrNotExist) {
 			fmt.Println("Файл не существует. Хотите попробовать еще раз? y/n")
@@ -73,7 +74,6 @@ func (p *PathReader) ReadPathFile() error {
 			if ans == "n" {
 				os.Exit(0)
 			}
-
 		} else {
 			panic(errF)
 		}
@@ -83,13 +83,33 @@ func (p *PathReader) ReadPathFile() error {
 			return err
 		}
 
-		p.File, errF = os.Open(filePath)
+		p.InFile, errF = os.Open(filePath)
 	}
 
 	return nil
 }
 
-//----------END pathReader----------
+func (p PathReader) CreateFile(parsedStruct []trueBill) {
+	data, err := json.MarshalIndent(parsedStruct, "", "\t")
+	if err != nil {
+		panic(err)
+	}
+
+	tmp := string(data)
+	DEBUGprinter(tmp)
+
+	var f *os.File
+	f, err = os.Create(p.outputPath)
+	ErrorCheck(err)
+
+	_, err = f.WriteString(tmp)
+	ErrorCheck(err)
+
+	err = f.Close()
+	ErrorCheck(err)
+}
+
+// ----------END pathReader----------
 
 func DEBUGprinter(val ...interface{}) {
 	var printer []interface{}
@@ -108,20 +128,19 @@ func ErrorCheck(err error) {
 }
 
 func main() {
-
 	var f PathReader
 	f.Constructor()
 	errF := f.ReadPathFile()
 	ErrorCheck(errF)
 
-	stat, err := f.File.Stat()
+	stat, err := f.InFile.Stat()
 	if err != nil {
 		panic(err)
 	}
 
 	buf := make([]byte, stat.Size())
 
-	_, err = f.File.Read(buf)
+	_, err = f.InFile.Read(buf)
 	ErrorCheck(err)
 
 	var information []Inf
@@ -129,15 +148,153 @@ func main() {
 	err = json.Unmarshal(buf, &information)
 	ErrorCheck(err)
 
-	//DEBUGprinter(string(buf))
-	DEBUGprinter(information)
+	parsedStruct := CreateMap(information)
 
-	errF = f.File.Close()
+	var sliceOfInformation []trueBill
+
+	for _, bill := range parsedStruct {
+		var res trueBill
+		res.Valid = bill.Valid
+		res.Balance = bill.Balance
+		res.Company = bill.Company
+		for _, i := range bill.Invalid {
+			res.Invalid = append(res.Invalid, i)
+		}
+		sliceOfInformation = append(sliceOfInformation, res)
+	}
+
+	f.CreateFile(sliceOfInformation)
+
+	DEBUGprinter(parsedStruct)
+
+	errF = f.InFile.Close()
 	if errF != nil {
 		fmt.Println("Ошибка закрытия файла:")
 		panic(errF)
 	}
+}
 
+func CreateMap(information []Inf) map[string]Bill {
+	result := make(map[string]Bill)
+
+	for _, rhs := range information {
+		// если я не могу использовать ID, то и не смогу операцию записать в невалидную. Поэтому я ее не учитываю
+		if !ParseID(rhs.ID) {
+			DEBUGprinter("Ошибка ID", rhs)
+			continue
+		}
+		if rhs.Company == "" {
+			DEBUGprinter("Ошибка company", rhs) // без этого параментра не понятно к чему присваивать
+			continue
+		}
+		if rhs.CreatedAt == "" {
+			DEBUGprinter("Ошибка created_at", rhs) // без данного параметра не понятно как сортировать
+			continue
+		}
+
+		mapVal, ok := result[rhs.Company]
+		if !ok {
+			mapVal.Invalid = make(map[int64]interface{})
+		}
+		err := ParseVal(&mapVal, rhs)
+		mapVal.Company = rhs.Company
+
+		// добавление валидной операции
+		if err == nil {
+			mapVal.Valid++
+		} else { // добавление невалидной операции
+			myTime, err := time.Parse(time.RFC3339, rhs.CreatedAt)
+			if err != nil {
+				panic(err)
+			}
+
+			mapVal.Invalid[myTime.Unix()] = rhs.ID
+		}
+
+		result[rhs.Company] = mapVal
+	}
+	return result
+}
+
+func ParseID(iD interface{}) bool {
+	switch v := iD.(type) {
+	case string:
+		return true
+	case nil:
+		return false
+	case int:
+		return true
+	case float64:
+		if v == float64(int(v)) {
+			return true
+		}
+		return false
+	case float32:
+		if v == float32(int(v)) {
+			return true
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+func ParseVal(mapVal *Bill, rhs Inf) error {
+	var err = errors.New("non valid operation")
+
+	// добавление значения
+	switch rhs.Type {
+	case "income":
+		err = AddVal(mapVal, rhs)
+	case "+":
+		err = AddVal(mapVal, rhs)
+	case "-":
+		err = SubVal(mapVal, rhs)
+	case "outcome":
+		err = SubVal(mapVal, rhs)
+	}
+	return err
+}
+
+func AddVal(mapVal *Bill, rhs Inf) error {
+	val, err := CheckVal(rhs.Value)
+	if err != nil {
+		DEBUGprinter("надо добавить")
+		return err
+	}
+	mapVal.Balance += val
+	return nil
+}
+
+func SubVal(mapVal *Bill, rhs Inf) error {
+	val, err := CheckVal(rhs.Value)
+	if err != nil {
+		DEBUGprinter("надо добавить")
+		return err
+	}
+	mapVal.Balance -= val
+	return nil
+}
+
+func CheckVal(val interface{}) (int, error) {
+	switch v := val.(type) {
+	case string:
+		return strconv.Atoi(v)
+	case int:
+		return v, nil
+	case float32:
+		if v == float32(int(v)) {
+			return int(v), nil
+		}
+		return 0, errors.New("non valid operation")
+	case float64:
+		if v == float64(int(v)) {
+			return int(v), nil
+		}
+		return 0, errors.New("non valid operation")
+	default:
+		return 0, errors.New("non valid operation")
+	}
 }
 
 func (inf *Inf) UnmarshalJSON(data []byte) error {
@@ -151,11 +308,14 @@ func (inf *Inf) UnmarshalJSON(data []byte) error {
 		for name, val := range tmpInf.Operation {
 			switch name {
 			case "type":
-				tmpInf.Type = val
+				s, ok := val.(string)
+				if ok {
+					tmpInf.Type = s
+				}
 			case "value":
 				tmpInf.Value = val
 			case "id":
-				tmpInf.Id = val
+				tmpInf.ID = val
 			case "created_at":
 				s, ok := val.(string)
 				if ok {
@@ -168,27 +328,41 @@ func (inf *Inf) UnmarshalJSON(data []byte) error {
 	inf.Company = tmpInf.Company
 	inf.Type = tmpInf.Type
 	inf.Value = tmpInf.Value
-	inf.Id = tmpInf.Id
+	inf.ID = tmpInf.ID
 	inf.CreatedAt = tmpInf.CreatedAt
 
 	return nil
 }
 
 type anotherInf struct {
-	//name        type                     json tags
+	// name        type                  json tags
 	Company   string                 `json:"company"`
-	Type      interface{}            `json:"type"`
+	Type      string                 `json:"type"`
 	Operation map[string]interface{} `json:"operation,omitempty"`
 	Value     interface{}            `json:"value"`
-	Id        interface{}            `json:"id"`
+	ID        interface{}            `json:"id"`
 	CreatedAt string                 `json:"created_at"`
 }
 
 type Inf struct {
-	//name        type                     json tags
+	// name        type       json tags
 	Company   string      `json:"company"`
-	Type      interface{} `json:"type"`
-	Value     interface{} `json:"value"`
-	Id        interface{} `json:"id"`
+	Type      string      `json:"type"`  // non valid when not income, outcome, +, - AND nil
+	Value     interface{} `json:"value"` // int float string | non valid when not int AND nil
+	ID        interface{} `json:"id"`    // int string | non valid when not type AND nil
 	CreatedAt string      `json:"created_at"`
+}
+
+type Bill struct {
+	Company string                `json:"company"`
+	Valid   int                   `json:"valid_operations_count"`
+	Balance int                   `json:"balance"`
+	Invalid map[int64]interface{} `json:"invalid_operations,omitempty"`
+}
+
+type trueBill struct {
+	Company string        `json:"company"`
+	Valid   int           `json:"valid_operations_count"`
+	Balance int           `json:"balance"`
+	Invalid []interface{} `json:"invalid_operations,omitempty"`
 }
