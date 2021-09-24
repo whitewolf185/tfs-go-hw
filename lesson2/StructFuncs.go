@@ -137,44 +137,46 @@ func (inf *Inf) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if len(tmpInf.Operation) != 0 {
-		for name, val := range tmpInf.Operation {
-			switch name {
-			case "type":
-				s, ok := val.(string)
-				if ok {
-					tmpInf.Type = s
-				}
-			case "value":
-				tmpInf.Value = val
-			case "id":
-				tmpInf.ID = val
-			case "created_at":
-				s, ok := val.(string)
-				if ok {
-					tmpInf.CreatedAt = s
-				}
-			}
-		}
-	}
-
 	inf.Company = tmpInf.Company
 	inf.Type = tmpInf.Type
 	inf.Value = tmpInf.Value
 	inf.ID = tmpInf.ID
 	inf.CreatedAt = tmpInf.CreatedAt
 
+	OperationParser(inf, tmpInf.Operation)
 	return nil
+}
+
+func OperationParser(inf *Inf, operation OperationType) {
+	if operation.Type != "" {
+		inf.Type = operation.Type
+	}
+	if operation.Value != nil {
+		inf.Value = operation.Value
+	}
+	if operation.ID != nil {
+		inf.ID = operation.ID
+	}
+	if operation.CreatedAt != "" {
+		inf.CreatedAt = operation.CreatedAt
+	}
+}
+
+type OperationType struct {
+	Type      string      `json:"type"`
+	Value     interface{} `json:"value"`
+	ID        interface{} `json:"id"`
+	CreatedAt string      `json:"created_at"`
 }
 
 type ParsedStruct struct {
 	// name        type                  json tags
-	Company   string                 `json:"company"`
-	Type      string                 `json:"type"`
-	Operation map[string]interface{} `json:"operation,omitempty"`
-	Value     interface{}            `json:"value"`
-	ID        interface{}            `json:"id"`
-	CreatedAt string                 `json:"created_at"`
+	Company   string        `json:"company"`
+	Type      string        `json:"type"`
+	Operation OperationType `json:"operation,omitempty"`
+	Value     interface{}   `json:"value"`
+	ID        interface{}   `json:"id"`
+	CreatedAt string        `json:"created_at"`
 }
 
 type Inf struct {
