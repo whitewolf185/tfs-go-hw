@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 )
 
@@ -12,31 +12,32 @@ import (
 
 type PathReader struct {
 	fileENV    string
-	InFile     *os.File
+	Data       []byte
 	outputPath string
 }
 
-func (p *PathReader) Constructor() {
+func MakePathReader() PathReader {
+	var p PathReader
 	p.fileENV = "FILE"
 	p.outputPath = "D:/Documents/tfs-go-hw/lesson2/output.json"
+	return p
 }
 
-func (p PathReader) readFromUser() (string, bool) {
-	var fileUser string
-	fmt.Println("Введите файл:")
-	_, err := fmt.Scanf("%s", &fileUser)
-	if err == nil {
-		return fileUser, true
+func (p PathReader) readFromUser() []byte {
+	data, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		panic(err)
 	}
-	panic(err)
+
+	return data
 }
 
-func (p PathReader) readingArgs() (string, bool) {
+func (p PathReader) readArgs() (string, bool) {
 	var fileFlag = flag.String("file", "", "path to file")
 	flag.Parse()
 
 	if fileFlag == nil {
-		er := fmt.Errorf("%s", "Ошибка указателя fileFlag. func readingArgs()\n")
+		er := fmt.Errorf("%s", "Ошибка указателя fileFlag. func readArgs()\n")
 		panic(er)
 	}
 
@@ -45,45 +46,22 @@ func (p PathReader) readingArgs() (string, bool) {
 	} else if file, ok := os.LookupEnv(p.fileENV); ok {
 		return file, true
 	} else {
-		return p.readFromUser()
+		return "", false
 	}
 }
 
-func (p *PathReader) ReadPathFile() error {
-	filePath, ok := p.readingArgs()
+func (p *PathReader) ReadFileData() error {
+	filePath, ok := p.readArgs()
 	if !ok {
-		var err = errors.New("something wrong in path reading")
-		return err
+		p.readFromUser()
+		return nil
 	}
 
 	DEBUGprinter("filePath:", filePath)
 
 	var errF error
-	p.InFile, errF = os.Open(filePath)
-	for errF != nil {
-		if errors.Is(errF, os.ErrNotExist) {
-			fmt.Println("Файл не существует. Хотите попробовать еще раз? y/n")
-			ans := ""
-
-			_, e := fmt.Scanf("%s", &ans)
-			if e != nil {
-				panic(e)
-			}
-			if ans == "n" {
-				os.Exit(0)
-			}
-		} else {
-			panic(errF)
-		}
-		filePath, ok = p.readFromUser()
-		if !ok {
-			var err = errors.New("something wrong in path reading")
-			return err
-		}
-
-		p.InFile, errF = os.Open(filePath)
-	}
-
+	p.Data, errF = ioutil.ReadFile(filePath)
+	ErrorCheck(errF)
 	return nil
 }
 

@@ -131,7 +131,7 @@ func CheckVal(val interface{}) (int, error) {
 }
 
 func (inf *Inf) UnmarshalJSON(data []byte) error {
-	var tmpInf anotherInf
+	var tmpInf ParsedStruct
 	err := json.Unmarshal(data, &tmpInf)
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func (inf *Inf) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type anotherInf struct {
+type ParsedStruct struct {
 	// name        type                  json tags
 	Company   string                 `json:"company"`
 	Type      string                 `json:"type"`

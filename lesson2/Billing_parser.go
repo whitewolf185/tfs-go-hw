@@ -23,25 +23,14 @@ func ErrorCheck(err error) {
 }
 
 func main() {
-	var f PathReader
-	f.Constructor()
-	errF := f.ReadPathFile()
+	f := MakePathReader()
+	errF := f.ReadFileData()
 	ErrorCheck(errF)
-
-	stat, err := f.InFile.Stat()
-	if err != nil {
-		panic(err)
-	}
-
-	buf := make([]byte, stat.Size())
-
-	_, err = f.InFile.Read(buf)
-	ErrorCheck(err)
 
 	var information []Inf
 
-	err = json.Unmarshal(buf, &information)
-	ErrorCheck(err)
+	errF = json.Unmarshal(f.Data, &information)
+	ErrorCheck(errF)
 
 	parsedStruct := CreateMap(information)
 
@@ -61,10 +50,4 @@ func main() {
 	f.CreateFile(sliceOfInformation)
 
 	DEBUGprinter(parsedStruct)
-
-	errF = f.InFile.Close()
-	if errF != nil {
-		fmt.Println("Ошибка закрытия файла:")
-		panic(errF)
-	}
 }
