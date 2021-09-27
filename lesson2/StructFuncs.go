@@ -163,6 +163,7 @@ func OperationParser(inf *Inf, operation OperationType) {
 }
 
 type OperationType struct {
+	Company   string      `json:"company"`
 	Type      string      `json:"type"`
 	Value     interface{} `json:"value"`
 	ID        interface{} `json:"id"`
@@ -171,12 +172,8 @@ type OperationType struct {
 
 type ParsedStruct struct {
 	// name        type                  json tags
-	Company   string        `json:"company"`
-	Type      string        `json:"type"`
+	OperationType
 	Operation OperationType `json:"operation,omitempty"`
-	Value     interface{}   `json:"value"`
-	ID        interface{}   `json:"id"`
-	CreatedAt string        `json:"created_at"`
 }
 
 type Inf struct {

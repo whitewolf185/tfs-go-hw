@@ -19,7 +19,7 @@ type PathReader struct {
 func MakePathReader() PathReader {
 	var p PathReader
 	p.fileENV = "FILE"
-	p.outputPath = "D:/Documents/tfs-go-hw/lesson2/output.json"
+	p.outputPath = "D:/GO/tfs-go-hw/lesson2/output.json"
 	return p
 }
 
