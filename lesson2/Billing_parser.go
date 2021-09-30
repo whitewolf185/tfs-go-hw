@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 )
 
 func DEBUGprinter(val ...interface{}) {
@@ -22,14 +23,31 @@ func ErrorCheck(err error) {
 	}
 }
 
+func KeysSort(invalid *map[int64]interface{}) []int64 {
+	keys := make([]int64, len(*invalid))
+	i := 0
+	for k := range *invalid {
+		keys[i] = k
+		i++
+	}
+
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+	return keys
+}
+
 func main() {
 	f := MakePathReader()
 	errF := f.ReadFileData()
 	ErrorCheck(errF)
 
-	var information []Inf
+	var information []ParsedStruct
 
 	errF = json.Unmarshal(f.Data, &information)
+	for i, val := range information {
+		OperationParser(&val, val.Operation)
+		information[i] = val
+	}
 	ErrorCheck(errF)
 
 	parsedStruct := CreateMap(information)
@@ -41,8 +59,11 @@ func main() {
 		res.Valid = bill.Valid
 		res.Balance = bill.Balance
 		res.Company = bill.Company
-		for _, i := range bill.Invalid {
-			res.Invalid = append(res.Invalid, i)
+
+		keys := KeysSort(&bill.Invalid)
+
+		for _, i := range keys {
+			res.Invalid = append(res.Invalid, bill.Invalid[i])
 		}
 		sliceOfInformation = append(sliceOfInformation, res)
 	}

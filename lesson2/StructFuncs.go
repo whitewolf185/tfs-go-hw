@@ -1,13 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"strconv"
 	"time"
 )
 
-func CreateMap(information []Inf) map[string]Bill {
+func CreateMap(information []ParsedStruct) map[string]Bill {
 	result := make(map[string]Bill)
 
 	for _, rhs := range information {
@@ -72,7 +71,7 @@ func ParseID(iD interface{}) bool {
 	}
 }
 
-func ParseVal(mapVal *Bill, rhs Inf) error {
+func ParseVal(mapVal *Bill, rhs ParsedStruct) error {
 	var err = errors.New("non valid operation")
 
 	// добавление значения
@@ -89,7 +88,7 @@ func ParseVal(mapVal *Bill, rhs Inf) error {
 	return err
 }
 
-func AddVal(mapVal *Bill, rhs Inf) error {
+func AddVal(mapVal *Bill, rhs ParsedStruct) error {
 	val, err := CheckVal(rhs.Value)
 	if err != nil {
 		DEBUGprinter("надо добавить")
@@ -99,7 +98,7 @@ func AddVal(mapVal *Bill, rhs Inf) error {
 	return nil
 }
 
-func SubVal(mapVal *Bill, rhs Inf) error {
+func SubVal(mapVal *Bill, rhs ParsedStruct) error {
 	val, err := CheckVal(rhs.Value)
 	if err != nil {
 		DEBUGprinter("надо добавить")
@@ -130,24 +129,7 @@ func CheckVal(val interface{}) (int, error) {
 	}
 }
 
-func (inf *Inf) UnmarshalJSON(data []byte) error {
-	var tmpInf ParsedStruct
-	err := json.Unmarshal(data, &tmpInf)
-	if err != nil {
-		return err
-	}
-
-	inf.Company = tmpInf.Company
-	inf.Type = tmpInf.Type
-	inf.Value = tmpInf.Value
-	inf.ID = tmpInf.ID
-	inf.CreatedAt = tmpInf.CreatedAt
-
-	OperationParser(inf, tmpInf.Operation)
-	return nil
-}
-
-func OperationParser(inf *Inf, operation OperationType) {
+func OperationParser(inf *ParsedStruct, operation Inf) {
 	if operation.Type != "" {
 		inf.Type = operation.Type
 	}
@@ -162,18 +144,10 @@ func OperationParser(inf *Inf, operation OperationType) {
 	}
 }
 
-type OperationType struct {
-	Company   string      `json:"company"`
-	Type      string      `json:"type"`
-	Value     interface{} `json:"value"`
-	ID        interface{} `json:"id"`
-	CreatedAt string      `json:"created_at"`
-}
-
 type ParsedStruct struct {
 	// name        type                  json tags
-	OperationType
-	Operation OperationType `json:"operation,omitempty"`
+	Inf
+	Operation Inf `json:"operation,omitempty"`
 }
 
 type Inf struct {
