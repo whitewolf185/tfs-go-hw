@@ -21,6 +21,19 @@ const (
 	CandlePeriod10m CandlePeriod = "10m"
 )
 
+func PeriodTSInt(period CandlePeriod) (int, error) {
+	switch period {
+	case CandlePeriod1m:
+		return 1, nil
+	case CandlePeriod2m:
+		return 2, nil
+	case CandlePeriod10m:
+		return 10, nil
+	default:
+		return 0, ErrUnknownPeriod
+	}
+}
+
 func PeriodTS(period CandlePeriod, ts time.Time) (time.Time, error) {
 	switch period {
 	case CandlePeriod1m:
