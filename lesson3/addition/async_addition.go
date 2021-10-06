@@ -2,8 +2,9 @@ package addition
 
 import (
 	"context"
-	"fmt"
+	"encoding/csv"
 	"hw-async/domain"
+	"os"
 	"sync"
 	"time"
 
@@ -42,24 +43,25 @@ func createCandle(ctx context.Context, wg *sync.WaitGroup,
 	defer wg.Done()
 	dataLogger := log.New()
 	var (
-		// TODO думаю можно будет без слайса делать, и после закрытия сразу в файл записывать
-		candles []domain.Candle
-		err     error
-		timer   time.Time
+		err   error
+		timer time.Time
 	)
 	candleMap := make(map[string]domain.Candle)
 	start := false
 
+	wg.Add(1)
+	var canChan chan domain.Candle
+	go WriteToFile(ctx, wg, canChan, canPer)
+
 	for {
 		select {
 		case <-ctx.Done():
-			// TODO реализация закрытия свечки
 			if start {
 				for _, candle := range candleMap {
-					candles = append(candles, candle)
+					canChan <- candle
 				}
 			}
-			fmt.Println(canPer, " ", len(candles)/4)
+			Logger.Info("done")
 			return
 		case val := <-price:
 			candle, ok := candleMap[val.Ticker]
@@ -72,16 +74,16 @@ func createCandle(ctx context.Context, wg *sync.WaitGroup,
 			} else {
 				timer, err = domain.PeriodTS(canPer, val.TS)
 				if err != nil {
-					panic(err)
+					Logger.Error("in PariodTS ", err)
 				}
 				comparison, errInt := domain.PeriodTSInt(canPer)
 				if errInt != nil {
-					panic(errInt)
+					Logger.Error("in PariodTSInt ", err)
 				}
 
 				if timer.Minute()-candle.TS.Minute() >= comparison { // закрытие свечи
-					// TODO сделать отправку свечи в файл
-					candles = append(candles, candle)
+					Logger.Info("time to close candle ", canPer)
+					canChan <- candle
 					dataLogger.Info("created new candle ", canPer)
 					candle = CreateNewCandle(val, canPer)
 				} else {
@@ -91,6 +93,64 @@ func createCandle(ctx context.Context, wg *sync.WaitGroup,
 
 				candleMap[val.Ticker] = candle
 			}
+		}
+	}
+}
+
+func WriteToFile(ctx context.Context, wg *sync.WaitGroup,
+	value <-chan domain.Candle, canPer domain.CandlePeriod) {
+	defer wg.Done()
+	var (
+		csvFile *os.File
+		err     error
+	)
+	defer func(csvFile *os.File) {
+		err = csvFile.Close()
+		if err != nil {
+			Logger.Error("Bad close file ", canPer)
+			panic(err)
+		}
+	}(csvFile)
+
+	switch canPer {
+	case domain.CandlePeriod1m:
+		csvFile, err = os.Create("D:/Documents/tfs-go-hw/lesson3/table/Candles1m.csv")
+		if err != nil {
+			Logger.Error("Bad open file 1m")
+			panic(err)
+		}
+	case domain.CandlePeriod2m:
+		csvFile, err = os.Create("D:/Documents/tfs-go-hw/lesson3/table/Candles2m.csv")
+		if err != nil {
+			Logger.Error("Bad open file 2m")
+			panic(err)
+		}
+	case domain.CandlePeriod10m:
+		csvFile, err = os.Create("D:/Documents/tfs-go-hw/lesson3/table/Candles10m.csv")
+		if err != nil {
+			Logger.Error("Bad open file 10m")
+			panic(err)
+		}
+	}
+
+	csvWriter := csv.NewWriter(csvFile)
+
+	for {
+		Logger.Info("Listening...")
+		select {
+		case <-ctx.Done():
+			return
+		case v := <-value:
+			Logger.Info("im here")
+			result := candleToStr(v, canPer)
+
+			err := csvWriter.Write(result)
+			if err != nil {
+				panic(err)
+			}
+			csvWriter.Flush()
+			info := log.New()
+			info.Info("Writing to the file was successful")
 		}
 	}
 }
