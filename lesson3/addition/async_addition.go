@@ -50,7 +50,7 @@ func createCandle(ctx context.Context, wg *sync.WaitGroup,
 	start := false
 
 	wg.Add(1)
-	var canChan chan domain.Candle
+	canChan := make(chan domain.Candle)
 	go WriteToFile(ctx, wg, canChan, canPer)
 
 	for {
@@ -82,7 +82,6 @@ func createCandle(ctx context.Context, wg *sync.WaitGroup,
 				}
 
 				if timer.Minute()-candle.TS.Minute() >= comparison { // закрытие свечи
-					Logger.Info("time to close candle ", canPer)
 					canChan <- candle
 					dataLogger.Info("created new candle ", canPer)
 					candle = CreateNewCandle(val, canPer)
@@ -104,13 +103,6 @@ func WriteToFile(ctx context.Context, wg *sync.WaitGroup,
 		csvFile *os.File
 		err     error
 	)
-	defer func(csvFile *os.File) {
-		err = csvFile.Close()
-		if err != nil {
-			Logger.Error("Bad close file ", canPer)
-			panic(err)
-		}
-	}(csvFile)
 
 	switch canPer {
 	case domain.CandlePeriod1m:
@@ -133,15 +125,34 @@ func WriteToFile(ctx context.Context, wg *sync.WaitGroup,
 		}
 	}
 
+	defer func(csvFile *os.File) {
+		Logger.Info("closing file ", canPer)
+		err = csvFile.Close()
+		if err != nil {
+			Logger.Error("Bad close file ", canPer)
+			panic(err)
+		}
+	}(csvFile)
+
 	csvWriter := csv.NewWriter(csvFile)
 
 	for {
-		Logger.Info("Listening...")
 		select {
 		case <-ctx.Done():
+			for i := 0; i < 4; i++ {
+				v := <-value
+				result := candleToStr(v, canPer)
+
+				err := csvWriter.Write(result)
+				if err != nil {
+					panic(err)
+				}
+				csvWriter.Flush()
+				info := log.New()
+				info.Info("Writing to the file was successful")
+			}
 			return
 		case v := <-value:
-			Logger.Info("im here")
 			result := candleToStr(v, canPer)
 
 			err := csvWriter.Write(result)
