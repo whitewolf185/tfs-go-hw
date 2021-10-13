@@ -36,16 +36,34 @@ func main() {
 
 	// working area
 
-	C1m, C2m, C10m := addition.GetData(ctx, &wg, prices)
+	C1m, C2m, C10m := addition.GetData(&wg, prices)
 
 	fileC1m := addition.CreateCandle(&wg, C1m, domain.CandlePeriod1m)
 	fileC2m := addition.CreateCandle(&wg, C2m, domain.CandlePeriod2m)
 	fileC10m := addition.CreateCandle(&wg, C10m, domain.CandlePeriod10m)
 
 	wg.Add(3)
-	go addition.WriteToFile(&wg, fileC1m, domain.CandlePeriod1m)
-	go addition.WriteToFile(&wg, fileC2m, domain.CandlePeriod2m)
-	go addition.WriteToFile(&wg, fileC10m, domain.CandlePeriod10m)
+	go func() {
+		err := addition.WriteToFile(&wg, fileC1m, domain.CandlePeriod1m)
+		if err != nil {
+			logger.Error(err)
+			cancel()
+		}
+	}()
+	go func() {
+		err := addition.WriteToFile(&wg, fileC2m, domain.CandlePeriod2m)
+		if err != nil {
+			logger.Error(err)
+			cancel()
+		}
+	}()
+	go func() {
+		err := addition.WriteToFile(&wg, fileC10m, domain.CandlePeriod10m)
+		if err != nil {
+			logger.Error(err)
+			cancel()
+		}
+	}()
 
 	// end of working area
 	<-sigs

@@ -1,6 +1,7 @@
 package addition
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"hw-async/domain"
@@ -53,32 +54,16 @@ func GetCanPerStr(period domain.CandlePeriod) (string, error) {
 	}
 }
 
-func candleToStr(v domain.Candle, canPer domain.CandlePeriod) []string {
-	var result []string
-	// Ticker
-	result = append(result, v.Ticker)
-	// Period
-	canPerStr, err := GetCanPerStr(canPer)
-	if err != nil {
-		panic(err)
-	}
-	result = append(result, canPerStr)
-	// Open
-	res := fmt.Sprintf("%f", v.Open)
-	result = append(result, res)
-	// High
-	res = fmt.Sprintf("%f", v.High)
-	result = append(result, res)
-	// Low
-	res = fmt.Sprintf("%f", v.Low)
-	result = append(result, res)
-	// Close
-	res = fmt.Sprintf("%f", v.Close)
-	result = append(result, res)
-	// TS
-	result = append(result, v.TS.String())
+func showWriterErr(period domain.CandlePeriod) error {
+	return errors.New(fmt.Sprintf("writer err in %s", period))
+}
 
-	return result
+func badCloseErr(period domain.CandlePeriod) error {
+	return errors.New(fmt.Sprintf("Bad close file %s", period))
+}
+
+func badOpenErr(period domain.CandlePeriod) error {
+	return errors.New(fmt.Sprintf("Bad open file %s", period))
 }
 
 var Logger = log.New()
