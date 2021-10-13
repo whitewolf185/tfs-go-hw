@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"hw-async/addition"
+	"hw-async/domain"
 	"hw-async/generator"
 	"os"
 	"os/signal"
@@ -34,8 +35,17 @@ func main() {
 	prices := pg.Prices(ctx)
 
 	// working area
-	wg.Add(1)
-	go addition.GetData(ctx, prices, &wg)
+
+	C1m, C2m, C10m := addition.GetData(ctx, &wg, prices)
+
+	fileC1m := addition.CreateCandle(&wg, C1m, domain.CandlePeriod1m)
+	fileC2m := addition.CreateCandle(&wg, C2m, domain.CandlePeriod2m)
+	fileC10m := addition.CreateCandle(&wg, C10m, domain.CandlePeriod10m)
+
+	wg.Add(3)
+	go addition.WriteToFile(&wg, fileC1m, domain.CandlePeriod1m)
+	go addition.WriteToFile(&wg, fileC2m, domain.CandlePeriod2m)
+	go addition.WriteToFile(&wg, fileC10m, domain.CandlePeriod10m)
 
 	// end of working area
 	<-sigs
