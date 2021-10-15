@@ -42,28 +42,9 @@ func main() {
 	fileC2m := addition.CreateCandle(&wg, C2m, domain.CandlePeriod2m)
 	fileC10m := addition.CreateCandle(&wg, C10m, domain.CandlePeriod10m)
 
-	wg.Add(3)
-	go func() {
-		err := addition.WriteToFile(&wg, fileC1m, domain.CandlePeriod1m)
-		if err != nil {
-			logger.Error(err)
-			cancel()
-		}
-	}()
-	go func() {
-		err := addition.WriteToFile(&wg, fileC2m, domain.CandlePeriod2m)
-		if err != nil {
-			logger.Error(err)
-			cancel()
-		}
-	}()
-	go func() {
-		err := addition.WriteToFile(&wg, fileC10m, domain.CandlePeriod10m)
-		if err != nil {
-			logger.Error(err)
-			cancel()
-		}
-	}()
+	addition.WriteToFile(&wg, fileC1m, domain.CandlePeriod1m)
+	addition.WriteToFile(&wg, fileC2m, domain.CandlePeriod2m)
+	addition.WriteToFile(&wg, fileC10m, domain.CandlePeriod10m)
 
 	// end of working area
 	<-sigs

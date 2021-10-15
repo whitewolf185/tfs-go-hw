@@ -41,7 +41,6 @@ func CreateCandle(wg *sync.WaitGroup,
 		timer time.Time
 	)
 	candleMap := make(map[string]domain.Candle)
-	start := false
 
 	canChan := make(chan domain.Candle)
 
@@ -51,7 +50,6 @@ func CreateCandle(wg *sync.WaitGroup,
 
 		for val := range price {
 			candle, ok := candleMap[val.Ticker]
-			start = true
 			if !ok {
 				// только создал свечку
 				candle = CreateNewCandle(val, canPer)
@@ -79,11 +77,11 @@ func CreateCandle(wg *sync.WaitGroup,
 				candleMap[val.Ticker] = candle
 			}
 		}
-		if start {
-			for _, candle := range candleMap {
-				canChan <- candle
-			}
+
+		for _, candle := range candleMap {
+			canChan <- candle
 		}
+
 		Logger.Info("done")
 		close(canChan)
 	}()
@@ -92,48 +90,55 @@ func CreateCandle(wg *sync.WaitGroup,
 }
 
 func WriteToFile(wg *sync.WaitGroup,
-	value <-chan domain.Candle, canPer domain.CandlePeriod) error {
-	defer wg.Done()
-
+	value <-chan domain.Candle, canPer domain.CandlePeriod) {
 	var (
 		csvFile *os.File
 		err     error
 	)
 
-	path := fmt.Sprintf("D:/Documents/tfs-go-hw/lesson3/table/Candles%s.csv", canPer)
+	path := fmt.Sprintf("D:/GO/tfs-go-hw/lesson3/table/candles_%s.csv", canPer)
 	csvFile, err = os.Create(path)
 	if err != nil {
-		Logger.Error("Bad open file ", canPer)
-		return badOpenErr(canPer)
+		Logger.Error("Bad open file ", canPer, " Error: ", err)
+		return
 	}
 
 	csvWriter := csv.NewWriter(csvFile)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			Logger.Info("closing file ", canPer)
+			err = csvFile.Close()
+			if err != nil {
+				Logger.Error("Bad close file ", canPer, " Error: ", err)
+				return
+			}
+		}()
+		for v := range value {
+			var strPer string
+			strPer, err = GetCanPerStr(canPer)
+			if err != nil {
+				Logger.Error(canPer, " Error: ", err)
+				return
+			}
 
-	for v := range value {
-		var strPer string
-		strPer, err = GetCanPerStr(canPer)
-
-		err = csvWriter.Write([]string{
-			v.Ticker,
-			fmt.Sprintf("%s", strPer),
-			fmt.Sprintf("%f", v.Open),
-			fmt.Sprintf("%f", v.High),
-			fmt.Sprintf("%f", v.Low),
-			fmt.Sprintf("%f", v.Close),
-			v.TS.Format(time.RFC3339),
-		})
-		if err != nil {
-			return showWriterErr(canPer)
+			err = csvWriter.Write([]string{
+				v.Ticker,
+				fmt.Sprintf("%s", strPer),
+				fmt.Sprintf("%f", v.Open),
+				fmt.Sprintf("%f", v.High),
+				fmt.Sprintf("%f", v.Low),
+				fmt.Sprintf("%f", v.Close),
+				v.TS.Format(time.RFC3339),
+			})
+			if err != nil {
+				Logger.Error("Bad write file ", canPer, " Error: ", err)
+				return
+			}
+			csvWriter.Flush()
+			info := log.New()
+			info.Info("Writing to the file was successful")
 		}
-		csvWriter.Flush()
-		info := log.New()
-		info.Info("Writing to the file was successful")
-	}
-
-	Logger.Info("closing file ", canPer)
-	err = csvFile.Close()
-	if err != nil {
-		return badCloseErr(canPer)
-	}
-	return nil
+	}()
 }
