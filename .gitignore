@@ -1,4 +1,7 @@
 .idea/
 bin/
 
+*.csv
 *.ini
+*test*
+/lesson2/out.json
