@@ -2,3 +2,4 @@
 bin/
 
 *.ini
+*_chat.txt
