@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"log"
 	"net/http"
+	"os"
+	"sync"
 	"time"
 )
 
@@ -33,6 +36,10 @@ var users = make(map[string]string)
 type tokenClaims struct {
 	jwt.StandardClaims
 	UserName string
+}
+
+type MutexHendler struct {
+	mutex *sync.Mutex
 }
 
 func Auth(handler http.Handler) http.Handler {
@@ -78,4 +85,29 @@ func GenerateToken(username string) (string, error) {
 
 func GetFilepath(filename string) string {
 	return fmt.Sprintf("%s%s/%s_chat.txt", workingFolder, "chats", filename)
+}
+
+func WriteToFile(mutex *sync.Mutex, bodyMessage SendMessage) error {
+	chatPath := GetFilepath(bodyMessage.SendTo)
+
+	mutex.Lock()
+	file, err := os.OpenFile(chatPath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
+	if err != nil {
+		log.Fatal("bad create file. Error ", err)
+		return err
+	}
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Fatal("bad close file")
+		}
+	}()
+	_, err = file.Write([]byte(bodyMessage.Message + "\n"))
+	if err != nil {
+		log.Fatal("bad write file. Error ", err)
+		return err
+	}
+	mutex.Unlock()
+
+	return nil
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
-	"os"
 )
 
 // LoginHandler нужно отправлять пост запросом структуру вида username="some user"
@@ -42,7 +41,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SendMessageHandler тут нужно отсылать json вида "send_to="some user" & message="some message""
-func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+func (obj *MutexHendler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var bodyMessage SendMessage
 	if err := json.NewDecoder(r.Body).Decode(&bodyMessage); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -67,20 +66,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chatPath := GetFilepath(bodyMessage.SendTo)
-	file, err := os.OpenFile(chatPath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
-	if err != nil {
-		log.Fatal("bad create file. Error ", err)
-	}
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			log.Fatal("bad close file")
-		}
-	}()
-	_, err = file.Write([]byte(bodyMessage.Message + "\n"))
-	if err != nil {
-		log.Fatal("bad write file. Error ", err)
-	}
+	_ = WriteToFile(obj.mutex, bodyMessage)
+
 	w.WriteHeader(http.StatusOK)
 }

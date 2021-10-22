@@ -12,6 +12,7 @@ func main() {
 	root := chi.NewRouter()
 	root.Use(middleware.Logger)
 	root.Post("/login", hand.LoginHandler)
+	messageHandler := hand.MutexHendler{}
 
 	r := chi.NewRouter()
 	r.Use(hand.Auth)
@@ -19,7 +20,7 @@ func main() {
 	r.Get("/users/{username}/main_chat", hand.GetChatMessagesHandler)
 
 	// чтобы отправить сообщение в вобщий чат, нужно в поле send_to написать main
-	r.Post("/users/{username}/message", hand.SendMessageHandler)
+	r.Post("/users/{username}/message", messageHandler.SendMessageHandler)
 	root.Mount("/api", r)
 
 	log.Fatal(http.ListenAndServe(hand.PORT, root))
