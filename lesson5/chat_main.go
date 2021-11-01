@@ -12,10 +12,10 @@ func main() {
 	root := chi.NewRouter()
 	root.Use(middleware.Logger)
 	root.Post("/login", hand.LoginHandler)
-	messageHandler := hand.MutexHendler{}
+	messageHandler := hand.NewStorage()
 
 	r := chi.NewRouter()
-	r.Use(hand.Auth)
+	r.Use(messageHandler.Auth)
 	r.Get("/users/{username}/message", hand.GetMessageHandler)
 	r.Get("/users/{username}/main_chat", hand.GetChatMessagesHandler)
 

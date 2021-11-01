@@ -36,12 +36,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println(token)
-	users[token] = username.Username
+
+	obj.users[token] = username.Username
 	http.SetCookie(w, cookie)
 }
 
 // SendMessageHandler тут нужно отсылать json вида "send_to="some user" & message="some message""
-func (obj *MutexHendler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var bodyMessage SendMessage
 	if err := json.NewDecoder(r.Body).Decode(&bodyMessage); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -66,7 +67,7 @@ func (obj *MutexHendler) SendMessageHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ = WriteToFile(obj.mutex, bodyMessage)
+	_ = WriteToFile(bodyMessage)
 
 	w.WriteHeader(http.StatusOK)
 }
