@@ -6,20 +6,33 @@ import (
 	"sync"
 )
 
+type StorageService interface {
+	SetTokenToUser(token, user string)
+	WriteMessage(bodyMessage SendMessage) error
+	GetMessage(user string) string
+}
+
 type Storage struct {
 	mutex    *sync.Mutex
 	users    map[string]string
 	messages map[string]string
+	service  StorageService
 }
 
-func NewStorage() Storage {
+func NewStorage() *Storage {
 	users := make(map[string]string)
 	messages := make(map[string]string)
-	return Storage{users: users, messages: messages}
+	return &Storage{users: users, messages: messages}
 }
 
 func (obj *Storage) SetTokenToUser(token, user string) {
+	obj.mutex.Lock()
+	obj.users[token] = user
+	obj.mutex.Unlock()
+}
 
+func (obj *Storage) GetMessage(user string) string {
+	return obj.users[user]
 }
 
 func (obj *Storage) Auth(handler http.Handler) http.Handler {

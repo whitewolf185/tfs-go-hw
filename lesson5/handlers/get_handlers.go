@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
-func GetMessageHandler(w http.ResponseWriter, r *http.Request) {
+func (obj Storage) GetMessageHandler(w http.ResponseWriter, r *http.Request) {
 	username, ok := r.Context().Value(userID).(cookieVal)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -20,24 +18,17 @@ func GetMessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	chatPath := GetFilepath(AuthorisedUsername)
 
-	chat, err := ioutil.ReadFile(chatPath)
-	if os.IsNotExist(err) {
-		_, err := os.Create(chatPath)
-		if err != nil {
-			log.Fatal("bad crete file")
-		}
-	}
+	chat := obj.service.GetMessage(AuthorisedUsername)
 
-	_, err = w.Write(chat)
+	_, err := w.Write([]byte(chat))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatal("bad write.\n Error", err)
 	}
 }
 
-func GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
+func (obj Storage) GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	username, ok := r.Context().Value(userID).(cookieVal)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -50,17 +41,9 @@ func GetChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chatPath := GetFilepath("main")
+	chat := obj.service.GetMessage("main")
 
-	chat, err := ioutil.ReadFile(chatPath)
-	if os.IsNotExist(err) {
-		_, err := os.Create(chatPath)
-		if err != nil {
-			log.Fatal("bad crete file")
-		}
-	}
-
-	_, err = w.Write(chat)
+	_, err := w.Write([]byte(chat))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatal("bad write.\n Error", err)

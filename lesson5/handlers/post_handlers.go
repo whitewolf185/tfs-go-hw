@@ -9,7 +9,7 @@ import (
 )
 
 // LoginHandler нужно отправлять пост запросом структуру вида username="some user"
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (obj *Storage) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var username User
 	if err := json.NewDecoder(r.Body).Decode(&username); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -37,12 +37,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println(token)
 
-	obj.users[token] = username.Username
+	obj.service.SetTokenToUser(token, username.Username)
 	http.SetCookie(w, cookie)
 }
 
 // SendMessageHandler тут нужно отсылать json вида "send_to="some user" & message="some message""
-func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+func (obj *Storage) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var bodyMessage SendMessage
 	if err := json.NewDecoder(r.Body).Decode(&bodyMessage); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -67,7 +67,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = WriteToFile(bodyMessage)
+	_ = obj.service.WriteMessage(bodyMessage)
 
 	w.WriteHeader(http.StatusOK)
 }
