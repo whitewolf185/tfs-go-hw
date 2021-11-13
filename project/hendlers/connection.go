@@ -5,31 +5,22 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
-
 	"github.com/gorilla/websocket"
+	"net/http"
 )
 
-type APIService interface {
-	generateAuthent(PostData, endpontPath string)
-	WebsocketConnect() (*websocket.Conn, error)
-	takeAPITokens()
-}
-
 type API struct {
-	privateTokenPathENV string
-	publicTokenPathENV  string
-	urlWebSocket        string
-	apiKeyPrivate       string
-	apiKeyPublic        string
-	service             APIService
+	urlWebSocket  string
+	apiKeyPrivate string
+	apiKeyPublic  string
 }
 
 func MakeAPI() API {
 	var api API
-	api.privateTokenPathENV = "TOKEN_PATH_PRIVATE"
-	api.publicTokenPathENV = "TOKEN_PATH_PUBLIC"
-	api.urlWebSocket = "WS_URL"
-	api.service.takeAPITokens()
+	privateTokenPathENV := "TOKEN_PATH_PRIVATE"
+	publicTokenPathENV := "TOKEN_PATH_PUBLIC"
+	urlWebSocketENV := "WS_URL"
+	api.apiKeyPrivate, api.apiKeyPublic, api.urlWebSocket = takeAPITokens(privateTokenPathENV, publicTokenPathENV, urlWebSocketENV)
 
 	return api
 }
@@ -56,6 +47,7 @@ func (obj API) generateAuthent(PostData, endpontPath string) (string, error) {
 	return result, nil
 }
 
-func (obj API) WebsocketConnect() (*websocket.Conn, error) {
-
+func (obj API) WebsocketConnect() (*websocket.Conn, *http.Response, error) {
+	return websocket.DefaultDialer.Dial(obj.urlWebSocket, http.Header{
+		"Sec-WebSocket-Extensions": []string{"permessage-deflate", "client_max_window_bits"}})
 }

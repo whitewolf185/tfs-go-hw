@@ -1,20 +1,28 @@
 package hendlers
 
 import (
-	"github.com/gorilla/websocket"
+	"encoding/json"
+	"fmt"
 )
 
 func Start() {
 	api := MakeAPI()
 	var errHandler MyErrors
 
-	ws, err := api.service.WebsocketConnect()
+	ws, _, err := api.WebsocketConnect()
 	if err != nil {
-		errHandler.handler.WBConnectErr(err)
+		errHandler.WBConnectErr(err)
 	}
+	defer ws.Close()
 
 	_, data, err := ws.ReadMessage()
 	if err != nil {
-		return
+		errHandler.WBReadMsgErr(err)
 	}
+
+	jsonData := make(map[string]interface{})
+
+	_ = json.Unmarshal(data, &jsonData)
+
+	fmt.Println(jsonData)
 }
