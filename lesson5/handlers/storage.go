@@ -6,32 +6,48 @@ import (
 	"sync"
 )
 
-type StorageService interface {
-	SetTokenToUser(token, user string)
-	WriteMessage(bodyMessage SendMessage) error
-	GetMessage(user string) string
+type Users struct {
+	mutex *sync.Mutex
+	users map[string]string
+}
+
+func NewUsers() *Users {
+	var user Users
+	user.users = make(map[string]string)
+
+	return &user
+}
+
+type Messages struct {
+	messages map[string]string
+	mutex    *sync.Mutex
+}
+
+func NewMessages() *Messages {
+	var msg Messages
+	msg.messages = make(map[string]string)
+
+	return &msg
 }
 
 type Storage struct {
-	mutex    *sync.Mutex
-	users    map[string]string
-	messages map[string]string
-	service  StorageService
+	users    Users
+	messages Messages
 }
 
 func NewStorage() *Storage {
-	users := make(map[string]string)
-	messages := make(map[string]string)
-	return &Storage{users: users, messages: messages}
+	users := NewUsers()
+	messages := NewMessages()
+	return &Storage{users: *users, messages: *messages}
 }
 
-func (obj Storage) SetTokenToUser(token, user string) {
+func (obj *Users) SetTokenToUser(token, user string) {
 	obj.mutex.Lock()
 	obj.users[token] = user
 	obj.mutex.Unlock()
 }
 
-func (obj Storage) GetMessage(user string) string {
+func (obj *Messages) GetMessage(user string) string {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	return obj.messages[user]
@@ -53,9 +69,9 @@ func (obj Storage) Auth(handler http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		obj.mutex.Lock()
-		username, ok := obj.users[c.Value]
-		obj.mutex.Unlock()
+		obj.users.mutex.Lock()
+		username, ok := obj.users.users[c.Value]
+		obj.users.mutex.Unlock()
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -68,7 +84,7 @@ func (obj Storage) Auth(handler http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (obj Storage) WriteMessage(bodyMessage SendMessage) error {
+func (obj *Messages) WriteMessage(bodyMessage SendMessage) error {
 
 	obj.mutex.Lock()
 	obj.messages[bodyMessage.SendTo] = bodyMessage.Message

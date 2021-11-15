@@ -37,7 +37,7 @@ func (obj *Storage) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println(token)
 
-	obj.service.SetTokenToUser(token, username.Username)
+	obj.users.SetTokenToUser(token, username.Username)
 	http.SetCookie(w, cookie)
 }
 
@@ -67,7 +67,7 @@ func (obj *Storage) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = obj.service.WriteMessage(bodyMessage)
+	_ = obj.messages.WriteMessage(bodyMessage)
 
 	w.WriteHeader(http.StatusOK)
 }
