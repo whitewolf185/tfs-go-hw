@@ -11,13 +11,13 @@ import (
 func main() {
 	root := chi.NewRouter()
 	root.Use(middleware.Logger)
-	root.Post("/login", hand.LoginHandler)
-	messageHandler := hand.NewStorage()
+	messageHandler := hand.NewChatHandlers()
+	root.Post("/login", messageHandler.LoginHandler)
 
 	r := chi.NewRouter()
 	r.Use(messageHandler.Auth)
-	r.Get("/users/{username}/message", hand.GetMessageHandler)
-	r.Get("/users/{username}/main_chat", hand.GetChatMessagesHandler)
+	r.Get("/users/{username}/message", messageHandler.GetMessageHandler)
+	r.Get("/users/{username}/main_chat", messageHandler.GetChatMessagesHandler)
 
 	// чтобы отправить сообщение в вобщий чат, нужно в поле send_to написать main
 	r.Post("/users/{username}/message", messageHandler.SendMessageHandler)
