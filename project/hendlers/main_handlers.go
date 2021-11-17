@@ -6,21 +6,33 @@ import (
 )
 
 func Start() {
-	api := MakeAPI()
+	api := MakeAPI(Connection{})
+	api.WebsocketConnect()
+	defer api.Close()
 	var errHandler MyErrors
 
-	ws, _, err := api.WebsocketConnect()
+	_, data, err := api.Ws.ReadMessage()
 	if err != nil {
-		errHandler.WBConnectErr(err)
-	}
-	defer ws.Close()
-
-	_, data, err := ws.ReadMessage()
-	if err != nil {
-		errHandler.WBReadMsgErr(err)
+		errHandler.WSReadMsgErr(err)
 	}
 
 	jsonData := make(map[string]interface{})
+
+	_ = json.Unmarshal(data, &jsonData)
+
+	fmt.Println(jsonData)
+
+	err = api.connServ.GetCandles(api.Ws, []string{"PI_XBTUSD"})
+	if err != nil {
+		errHandler.GetCandlesErr(err)
+	}
+
+	_, data, err = api.Ws.ReadMessage()
+	if err != nil {
+		errHandler.WSReadMsgErr(err)
+	}
+
+	jsonData = make(map[string]interface{})
 
 	_ = json.Unmarshal(data, &jsonData)
 
