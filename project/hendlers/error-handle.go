@@ -28,6 +28,11 @@ func (obj MyErrors) ReadFileErr(Type string, err error) {
 }
 
 func (obj MyErrors) MarshalErr(err error) error {
-	log.Errorf("Cannot Marshal json. Message have not sent Error: %s", err.Error())
+	log.Errorf("Cannot Marshal json. Error: %s", err.Error())
+	return errors.New("See error above\n")
+}
+
+func (obj MyErrors) UnmarshalErr(err error) error {
+	log.Errorf("Cannot Unarshal json. Error: %s", err.Error())
 	return errors.New("See error above\n")
 }

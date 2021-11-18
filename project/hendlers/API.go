@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+type connectionService interface {
+	GetterCan
+}
+
 type API struct {
 	urlWebSocket  string
 	apiKeyPrivate string
@@ -83,7 +87,11 @@ func (obj *API) WebsocketConnect() {
 }
 
 func (obj *API) Close() error {
-	err := obj.Ws.Close()
+	err := obj.Ws.WriteMessage(websocket.CloseMessage, []byte{})
+	if err != nil {
+		return err
+	}
+	err = obj.Ws.Close()
 	if err != nil {
 		return err
 	}

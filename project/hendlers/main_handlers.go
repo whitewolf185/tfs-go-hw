@@ -22,19 +22,14 @@ func Start() {
 
 	fmt.Println(jsonData)
 
-	err = api.connServ.GetCandles(api.Ws, []string{"PI_XBTUSD"})
+	canChan, err := api.connServ.GetCandles(api.Ws, []string{"PI_XBTUSD"})
 	if err != nil {
 		errHandler.GetCandlesErr(err)
 	}
 
-	_, data, err = api.Ws.ReadMessage()
-	if err != nil {
-		errHandler.WSReadMsgErr(err)
+	for {
+		can := <-canChan
+
+		fmt.Println(can)
 	}
-
-	jsonData = make(map[string]interface{})
-
-	_ = json.Unmarshal(data, &jsonData)
-
-	fmt.Println(jsonData)
 }
