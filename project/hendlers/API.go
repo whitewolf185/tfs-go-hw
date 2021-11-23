@@ -1,6 +1,7 @@
 package hendlers
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -8,11 +9,13 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"sync"
 	"time"
 )
 
 type connectionService interface {
 	GetterCan
+	Unsubscriber
 }
 
 type API struct {
@@ -21,16 +24,21 @@ type API struct {
 	apiKeyPublic  string
 
 	Ws       *websocket.Conn
+	Ctx      context.Context
+	cancel   context.CancelFunc
 	connServ connectionService
+
+	errHandler MyErrors
 }
 
-func MakeAPI(service connectionService) API {
+func MakeAPI(service connectionService, ctx context.Context) API {
 	var api API
 	privateTokenPathENV := "TOKEN_PATH_PRIVATE"
 	publicTokenPathENV := "TOKEN_PATH_PUBLIC"
 	urlWebSocketENV := "WS_URL"
 	api.apiKeyPrivate, api.apiKeyPublic, api.urlWebSocket = takeAPITokens(privateTokenPathENV, publicTokenPathENV, urlWebSocketENV)
 	api.connServ = service
+	api.Ctx, api.cancel = context.WithCancel(ctx)
 
 	return api
 }
@@ -62,7 +70,7 @@ func (obj API) webConn() (*websocket.Conn, *http.Response, error) {
 		"Sec-WebSocket-Extensions": []string{"permessage-deflate", "client_max_window_bits"}})
 }
 
-func (obj *API) WebsocketConnect() {
+func (obj *API) WebsocketConnect(wg *sync.WaitGroup) {
 	var errHandler MyErrors
 	ws, res, err := obj.webConn()
 	if err != nil {
@@ -84,13 +92,51 @@ func (obj *API) WebsocketConnect() {
 	obj.Ws = ws
 
 	log.Info("Connecting successful")
+
+	wg.Add(1)
+	go obj.PingPong(wg)
+}
+
+func (obj API) PingPong(wg *sync.WaitGroup) {
+	ping := time.NewTicker(pingPeriod)
+
+	defer func() {
+		ping.Stop()
+		wg.Done()
+	}()
+
+	obj.Ws.SetPongHandler(func(string) error {
+		err := obj.Ws.SetReadDeadline(time.Now().Add(pongWait))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	for {
+		select {
+		case <-ping.C:
+			if err := obj.Ws.WriteMessage(websocket.PingMessage, nil); err != nil {
+				obj.errHandler.PingErr(err)
+			}
+		case <-obj.Ctx.Done():
+			return
+		}
+	}
 }
 
 func (obj *API) Close() error {
-	err := obj.Ws.WriteMessage(websocket.CloseMessage, []byte{})
+	obj.cancel()
+	err := obj.connServ.Unsubscribe(obj.Ws)
+	if err != nil {
+		obj.errHandler.UnsubErr(err)
+	}
+
+	err = obj.Ws.WriteMessage(websocket.CloseMessage, []byte{})
 	if err != nil {
 		return err
 	}
+
 	err = obj.Ws.Close()
 	if err != nil {
 		return err
