@@ -5,7 +5,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var SubErr = errors.New("subscribe error")
+var (
+	SubErr          = errors.New("subscribe error")
+	OrderNotSuccess = errors.New("request do not have result success")
+	StatusNotPlaced = errors.New("cannot do this operation with ticket right now")
+)
 
 type MyErrors struct{}
 
@@ -17,8 +21,12 @@ func (obj MyErrors) WSReadMsgErr(err error) {
 	log.Panicf("Problem with WebSocket message read.  Error: %s", err.Error())
 }
 
+func (obj MyErrors) APIGenerateErr(err error) {
+	log.Fatalf("Some problem with API generate func.  Error %s", err)
+}
+
 func (obj MyErrors) APITokensReadErr(Type string) {
-	log.Fatalf("Problem with %s API read", Type)
+	log.Fatalf("Cant see ENV value %s", Type)
 }
 
 func (obj MyErrors) GetCandlesErr(err error) {
@@ -57,4 +65,16 @@ func (obj MyErrors) UnsubErr(err error) {
 
 func (obj MyErrors) BadApiClose(err error) {
 	log.Fatalf("bad Api close.  Error: %s", err)
+}
+
+func (obj MyErrors) HTTPRequestErr(err error) {
+	log.Errorf("Bad request.  Error: %s", err)
+}
+
+func (obj MyErrors) OrderSentErr(Type string) {
+	log.Errorf("Order sent failed because of %s", Type)
+}
+
+func (obj MyErrors) BadBodyCloseErr(err error) {
+	log.Errorf("bad close request body.  Errror: %s", err)
 }

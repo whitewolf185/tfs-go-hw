@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	tg_bot "main.go/project/tg-bot"
 	"sync"
 )
 
-func HandStart(ctx context.Context, wg *sync.WaitGroup) {
+func HandStart(ctx context.Context, wg *sync.WaitGroup, orChan chan tg_bot.Orders) {
 	defer wg.Done()
-	api := MakeAPI(Connection{}, ctx)
+	api := MakeAPI(Connection{}, ctx, orChan)
 	api.WebsocketConnect(wg)
 	defer func() {
 		if err := api.Close(); err != nil {
@@ -41,6 +42,7 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup) {
 		errHandler.GetCandlesErr(err)
 	}
 
+	api.OrderListener(wg)
 	for {
 		select {
 		case <-ctx.Done():

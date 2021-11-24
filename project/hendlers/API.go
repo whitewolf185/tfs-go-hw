@@ -6,9 +6,13 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	tg_bot "main.go/project/tg-bot"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -27,18 +31,18 @@ type API struct {
 	Ctx      context.Context
 	cancel   context.CancelFunc
 	connServ connectionService
+	orChan   chan tg_bot.Orders
 
 	errHandler MyErrors
 }
 
-func MakeAPI(service connectionService, ctx context.Context) API {
+func MakeAPI(service connectionService, ctx context.Context, orChan chan tg_bot.Orders) API {
 	var api API
-	privateTokenPathENV := "TOKEN_PATH_PRIVATE"
-	publicTokenPathENV := "TOKEN_PATH_PUBLIC"
-	urlWebSocketENV := "WS_URL"
-	api.apiKeyPrivate, api.apiKeyPublic, api.urlWebSocket = takeAPITokens(privateTokenPathENV, publicTokenPathENV, urlWebSocketENV)
+	api.apiKeyPrivate, api.apiKeyPublic, api.urlWebSocket = takeAPITokens()
 	api.connServ = service
 	api.Ctx, api.cancel = context.WithCancel(ctx)
+	api.orChan = make(chan tg_bot.Orders)
+	api.orChan = orChan
 
 	return api
 }
@@ -97,6 +101,7 @@ func (obj *API) WebsocketConnect(wg *sync.WaitGroup) {
 	go obj.PingPong(wg)
 }
 
+// PingPong функция нужна для того, чтобы организовать heartbeat.
 func (obj API) PingPong(wg *sync.WaitGroup) {
 	ping := time.NewTicker(pingPeriod)
 
@@ -108,7 +113,8 @@ func (obj API) PingPong(wg *sync.WaitGroup) {
 	obj.Ws.SetPongHandler(func(string) error {
 		err := obj.Ws.SetReadDeadline(time.Now().Add(pongWait))
 		if err != nil {
-			return err
+			//TODO тут надо делать реконнект
+			panic(err)
 		}
 		return nil
 	})
@@ -123,6 +129,88 @@ func (obj API) PingPong(wg *sync.WaitGroup) {
 			return
 		}
 	}
+}
+
+// OrderListener pipeline служащий для того, чтобы заниматься отправкой Orders по RESTAPI с целью покупки или продажи валюты
+func (obj *API) OrderListener(wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for {
+			select {
+			case <-obj.Ctx.Done():
+				return
+
+			case order := <-obj.orChan:
+				log.Println("Got the order")
+				u := url.URL{
+					Scheme: "https",
+					Host:   "demo-futures.kraken.com",
+					Path:   "derivatives",
+				}
+				u.Path += order.Endpoint
+				obj.makeQuery(&u, order.PostData)
+				PostData := obj.makePostData(order.PostData)
+				authent, err := obj.generateAuthent(PostData, order.Endpoint)
+				fmt.Println(authent)
+				if err != nil {
+					obj.errHandler.APIGenerateErr(err)
+				}
+
+				client := &http.Client{}
+				r, _ := http.NewRequest(http.MethodPost, u.String(), nil)
+				r.Header.Add("APIKey", obj.apiKeyPublic)
+				r.Header.Add("Authent", authent)
+
+				req, err := client.Do(r)
+				if err != nil {
+					obj.errHandler.HTTPRequestErr(err)
+				}
+
+				var reqMsg ResponseMsg
+				if err = json.NewDecoder(req.Body).Decode(&reqMsg); err != nil {
+					panic(err)
+				}
+				err = req.Body.Close()
+				if err != nil {
+					obj.errHandler.BadBodyCloseErr(err)
+				}
+
+				err = nil
+				if reqMsg.Result != "success" {
+					obj.errHandler.OrderSentErr("request do not have result success")
+					err = OrderNotSuccess
+				} else if reqMsg.Status.Status != "placed" {
+					obj.errHandler.OrderSentErr("cannot do this operation with ticket right now")
+					err = StatusNotPlaced
+				}
+				if err != nil {
+					// не записывать в БД
+				}
+				// записывать в БД
+			}
+		}
+	}()
+}
+
+//TODO эту функцию можно протестировать
+func (obj API) makePostData(data map[string]string) string {
+	values := url.Values{}
+
+	for argument, value := range data {
+		values.Add(argument, value)
+	}
+
+	return values.Encode()
+}
+
+func (obj API) makeQuery(u *url.URL, data map[string]string) {
+	q := u.Query()
+	for argument, value := range data {
+		q.Set(argument, value)
+	}
+	u.RawQuery = q.Encode()
 }
 
 func (obj *API) Close() error {

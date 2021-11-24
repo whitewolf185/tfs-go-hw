@@ -14,6 +14,12 @@ const (
 	CandlePeriod1h CandlePeriod = "1h"
 )
 
+const (
+	privateTokenPathENV = "TOKEN_PATH_PRIVATE"
+	publicTokenPathENV  = "TOKEN_PATH_PUBLIC"
+	urlWebSocketENV     = "WS_URL"
+)
+
 var ErrUnknownPeriod = errors.New("unknown period")
 
 // Options -- структура для записи необходимых для подписки на свечки настроек.
@@ -53,7 +59,7 @@ func strToCanPer(period string) (CandlePeriod, error) {
 }
 
 // takeAPITokens функция, которая парсит ENV переменные.
-func takeAPITokens(privateENV, publicENV, urlENV string) (string, string, string) {
+func takeAPITokens() (string, string, string) {
 	var (
 		errHandler MyErrors
 		ok         bool
@@ -62,9 +68,9 @@ func takeAPITokens(privateENV, publicENV, urlENV string) (string, string, string
 	)
 
 	// private APIkey parsing
-	FilePath, ok = os.LookupEnv(privateENV)
+	FilePath, ok = os.LookupEnv(privateTokenPathENV)
 	if !ok {
-		errHandler.APITokensReadErr("private")
+		errHandler.APITokensReadErr(privateTokenPathENV)
 	}
 
 	apiKeyPrivate, err := ioutil.ReadFile(FilePath)
@@ -73,9 +79,9 @@ func takeAPITokens(privateENV, publicENV, urlENV string) (string, string, string
 	}
 
 	// public APIkey parsing
-	FilePath, ok = os.LookupEnv(publicENV)
+	FilePath, ok = os.LookupEnv(publicTokenPathENV)
 	if !ok {
-		errHandler.APITokensReadErr("public")
+		errHandler.APITokensReadErr(publicTokenPathENV)
 	}
 
 	apiKeyPublic, err := ioutil.ReadFile(FilePath)
@@ -84,9 +90,9 @@ func takeAPITokens(privateENV, publicENV, urlENV string) (string, string, string
 	}
 
 	// URL WB parsing
-	url, ok = os.LookupEnv(urlENV)
+	url, ok = os.LookupEnv(urlWebSocketENV)
 	if !ok {
-		errHandler.APITokensReadErr("WB url")
+		errHandler.APITokensReadErr(urlWebSocketENV)
 	}
 
 	return string(apiKeyPrivate), string(apiKeyPublic), url
