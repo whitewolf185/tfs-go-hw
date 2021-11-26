@@ -4,6 +4,7 @@ import (
 	"context"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
+	"main.go/project/MyErrors"
 	"sync"
 )
 
@@ -23,7 +24,7 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) chan Orders {
 
 		updates, err := tgBot.TgAPI.GetUpdatesChan(u)
 		if err != nil {
-			tgBot.errHandler.TgBotUpdateErr(err)
+			MyErrors.TgBotUpdateErr(err)
 		}
 
 		for {

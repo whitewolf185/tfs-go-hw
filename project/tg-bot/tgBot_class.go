@@ -4,6 +4,8 @@ import (
 	"context"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
+	"main.go/project/MyErrors"
+	"main.go/project/addition"
 )
 
 type TgBot struct {
@@ -12,23 +14,19 @@ type TgBot struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
-
-	errHandler MyErrors
 }
 
 func MakeTgBot(ctx context.Context, orChan chan Orders) TgBot {
 	var (
-		bot        TgBot
-		err        error
-		errHandler MyErrors
+		bot TgBot
+		err error
 	)
-	token := takeTgBotToken()
+	token := addition.TakeTgBotToken()
 	bot.TgAPI, err = tgbotapi.NewBotAPI(token)
 	if err != nil {
-		errHandler.TgBotErr(err)
+		MyErrors.TgBotErr(err)
 	}
-	bot.ctx, bot.cancel = context.WithCancel(ctx) // нужно ли?
-	bot.orChan = make(chan Orders)
+	bot.ctx, bot.cancel = context.WithCancel(ctx)
 	bot.orChan = orChan
 
 	return bot
@@ -57,7 +55,7 @@ func (bot *TgBot) SendOrder(orderType OrdersTypes, ticket string, price string) 
 	return nil
 }
 
-func (bot TgBot) Close() error {
+func (bot *TgBot) Close() error {
 	bot.cancel()
 
 	return nil

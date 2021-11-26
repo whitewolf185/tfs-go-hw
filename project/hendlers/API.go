@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"main.go/project/MyErrors"
+	"main.go/project/addition"
 	tg_bot "main.go/project/tg-bot"
 	"net/http"
 	"net/url"
@@ -32,22 +34,23 @@ type API struct {
 	cancel   context.CancelFunc
 	connServ connectionService
 	orChan   chan tg_bot.Orders
-
-	errHandler MyErrors
 }
 
 func MakeAPI(service connectionService, ctx context.Context, orChan chan tg_bot.Orders) API {
 	var api API
-	api.apiKeyPrivate, api.apiKeyPublic, api.urlWebSocket = takeAPITokens()
+	tokens := addition.TakeAPITokens()
+	api.apiKeyPrivate = tokens.Private
+	api.apiKeyPublic = tokens.Public
+	api.urlWebSocket = tokens.Url
+
 	api.connServ = service
 	api.Ctx, api.cancel = context.WithCancel(ctx)
-	api.orChan = make(chan tg_bot.Orders)
 	api.orChan = orChan
 
 	return api
 }
 
-func (obj API) generateAuthent(PostData, endpontPath string) (string, error) {
+func (obj *API) generateAuthent(PostData, endpontPath string) (string, error) {
 	// step 1 and 2
 	sha := sha256.New()
 	src := PostData + endpontPath
@@ -69,66 +72,71 @@ func (obj API) generateAuthent(PostData, endpontPath string) (string, error) {
 	return result, nil
 }
 
-func (obj API) webConn() (*websocket.Conn, *http.Response, error) {
+func (obj *API) webConn() (*websocket.Conn, *http.Response, error) {
 	return websocket.DefaultDialer.Dial(obj.urlWebSocket, http.Header{
 		"Sec-WebSocket-Extensions": []string{"permessage-deflate", "client_max_window_bits"}})
 }
 
 func (obj *API) WebsocketConnect(wg *sync.WaitGroup) {
-	var errHandler MyErrors
 	ws, res, err := obj.webConn()
 	if err != nil {
 		if res.StatusCode == 404 {
 			for i := 0; i < 4 && err != nil; i++ { // 4 попытки подключиться к вебсокету с интервалом в 5 секунд
 				log.Println("trying to connect to WebSocket. Try", i+1)
-				ticker := time.NewTicker(5 * time.Second)
-				<-ticker.C
-				ticker.Stop()
+				time.Sleep(time.Second * 5)
 				ws, res, err = obj.webConn()
 			}
 		}
 	}
 
 	if err != nil {
-		errHandler.WSConnectErr(err)
+		MyErrors.WSConnectErr(err)
 	}
 
 	obj.Ws = ws
 
 	log.Info("Connecting successful")
 
-	wg.Add(1)
-	go obj.PingPong(wg)
+	obj.PingPong(wg)
 }
 
 // PingPong функция нужна для того, чтобы организовать heartbeat.
-func (obj API) PingPong(wg *sync.WaitGroup) {
-	ping := time.NewTicker(pingPeriod)
+func (obj *API) PingPong(wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		ping := time.NewTicker(pingPeriod)
 
-	defer func() {
-		ping.Stop()
-		wg.Done()
-	}()
+		defer func() {
+			ping.Stop()
+			wg.Done()
+		}()
 
-	obj.Ws.SetPongHandler(func(string) error {
 		err := obj.Ws.SetReadDeadline(time.Now().Add(pongWait))
 		if err != nil {
-			//TODO тут надо делать реконнект
+			// TODO тут надо делать реконнект
 			panic(err)
 		}
-		return nil
-	})
-
-	for {
-		select {
-		case <-ping.C:
-			if err := obj.Ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-				obj.errHandler.PingErr(err)
+		obj.Ws.SetPongHandler(func(string) error {
+			err := obj.Ws.SetReadDeadline(time.Now().Add(pongWait))
+			if err != nil {
+				// TODO тут надо делать реконнект
+				panic(err)
 			}
-		case <-obj.Ctx.Done():
-			return
+			return nil
+		})
+
+		for {
+			select {
+			case <-ping.C:
+				if err := obj.Ws.WriteMessage(websocket.PingMessage, nil); err != nil {
+					MyErrors.PingErr(err)
+				}
+			case <-obj.Ctx.Done():
+				return
+			}
 		}
-	}
+	}()
+
 }
 
 // OrderListener pipeline служащий для того, чтобы заниматься отправкой Orders по RESTAPI с целью покупки или продажи валюты
@@ -155,7 +163,7 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 				authent, err := obj.generateAuthent(PostData, order.Endpoint)
 				fmt.Println(authent)
 				if err != nil {
-					obj.errHandler.APIGenerateErr(err)
+					MyErrors.APIGenerateErr(err)
 				}
 
 				client := &http.Client{}
@@ -165,7 +173,7 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 
 				req, err := client.Do(r)
 				if err != nil {
-					obj.errHandler.HTTPRequestErr(err)
+					MyErrors.HTTPRequestErr(err)
 				}
 
 				var reqMsg ResponseMsg
@@ -174,16 +182,16 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 				}
 				err = req.Body.Close()
 				if err != nil {
-					obj.errHandler.BadBodyCloseErr(err)
+					MyErrors.BadBodyCloseErr(err)
 				}
 
 				err = nil
 				if reqMsg.Result != "success" {
-					obj.errHandler.OrderSentErr("request do not have result success")
-					err = OrderNotSuccess
+					MyErrors.OrderSentErr("request do not have result success")
+					err = MyErrors.OrderNotSuccess
 				} else if reqMsg.Status.Status != "placed" {
-					obj.errHandler.OrderSentErr("cannot do this operation with ticket right now")
-					err = StatusNotPlaced
+					MyErrors.OrderSentErr("cannot do this operation with ticket right now")
+					err = MyErrors.StatusNotPlaced
 				}
 				if err != nil {
 					// не записывать в БД
@@ -194,8 +202,8 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 	}()
 }
 
-//TODO эту функцию можно протестировать
-func (obj API) makePostData(data map[string]string) string {
+// TODO эту функцию можно протестировать
+func (obj *API) makePostData(data map[string]string) string {
 	values := url.Values{}
 
 	for argument, value := range data {
@@ -205,7 +213,7 @@ func (obj API) makePostData(data map[string]string) string {
 	return values.Encode()
 }
 
-func (obj API) makeQuery(u *url.URL, data map[string]string) {
+func (obj *API) makeQuery(u *url.URL, data map[string]string) {
 	q := u.Query()
 	for argument, value := range data {
 		q.Set(argument, value)
@@ -217,7 +225,7 @@ func (obj *API) Close() error {
 	obj.cancel()
 	err := obj.connServ.Unsubscribe(obj.Ws)
 	if err != nil {
-		obj.errHandler.UnsubErr(err)
+		MyErrors.UnsubErr(err)
 	}
 
 	err = obj.Ws.WriteMessage(websocket.CloseMessage, []byte{})

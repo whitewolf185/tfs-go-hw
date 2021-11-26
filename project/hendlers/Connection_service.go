@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"main.go/project/MyErrors"
+	"main.go/project/addition"
 	"sync"
 	"time"
 )
@@ -18,7 +20,7 @@ const (
 )
 
 type GetterCan interface {
-	GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options Options) (chan EventMsg, error)
+	GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) chan EventMsg
 }
 
 type Unsubscriber interface {
@@ -34,12 +36,11 @@ type WSMsg struct {
 type Connection struct {
 	SubMessage WSMsg
 	Candle     EventMsg
-	errHandler MyErrors
 
 	ws *websocket.Conn
 }
 
-func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (chan EventMsg, error) {
+func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) chan EventMsg {
 	canChan := make(chan EventMsg)
 
 	wg.Add(1)
@@ -59,7 +60,7 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (ch
 				var event EventMsg
 				err := obj.ws.ReadJSON(&event)
 				if err != nil {
-					obj.errHandler.WSReadMsgErr(errors.New("In cansleStream" + err.Error()))
+					MyErrors.WSReadMsgErr(errors.New("In cansleStream" + err.Error()))
 					close(canChan)
 					return
 				}
@@ -73,31 +74,30 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (ch
 		}
 	}()
 
-	return canChan, nil
+	return canChan
 }
 
-func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options Options) (chan EventMsg, error) {
+func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) chan EventMsg {
 	obj.SubMessage.Event = "subscribe"
-	obj.SubMessage.Feed = "candles_trade_" + string(options.canPer)
-	obj.SubMessage.Tickets = options.ticket
+	obj.SubMessage.Feed = "candles_trade_" + string(options.CanPer)
+	obj.SubMessage.Tickets = options.Ticket
 	obj.ws = ws
 
 	msg, err := json.Marshal(obj.SubMessage)
 	if err != nil {
-		err = obj.errHandler.MarshalErr(err)
-		return nil, err
+		MyErrors.MarshalErr(err)
 	}
 
 	fmt.Println(string(msg))
 
 	err = ws.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
-		return nil, err
+		MyErrors.WSWriteMsgErr(err)
 	}
 
 	_, data, err := ws.ReadMessage()
 	if err != nil {
-		obj.errHandler.WSReadMsgErr(err)
+		MyErrors.WSReadMsgErr(err)
 	}
 
 	jsonData := make(map[string]interface{})
@@ -107,7 +107,7 @@ func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx con
 	fmt.Println(jsonData)
 
 	if jsonData["event"] != "subscribed" {
-		return nil, SubErr
+		MyErrors.SubErr()
 	}
 
 	return obj.candleStream(wg, ctx)
@@ -120,9 +120,7 @@ func (obj Connection) Unsubscribe(ws *websocket.Conn) error {
 		return err
 	}
 
-	ticker := time.NewTicker(writeWait)
-	<-ticker.C
-	ticker.Stop()
+	time.Sleep(writeWait)
 
 	return nil
 }

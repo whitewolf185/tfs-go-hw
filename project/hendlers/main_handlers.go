@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"main.go/project/MyErrors"
+	"main.go/project/addition"
 	tg_bot "main.go/project/tg-bot"
 	"sync"
 )
@@ -14,14 +16,13 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup, orChan chan tg_bot.Order
 	api.WebsocketConnect(wg)
 	defer func() {
 		if err := api.Close(); err != nil {
-			api.errHandler.BadApiClose(err)
+			MyErrors.BadApiClose(err)
 		}
 	}()
-	var errHandler MyErrors
 
 	_, data, err := api.Ws.ReadMessage()
 	if err != nil {
-		errHandler.WSReadMsgErr(err)
+		MyErrors.WSReadMsgErr(err)
 	}
 
 	jsonData := make(map[string]interface{})
@@ -30,17 +31,14 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup, orChan chan tg_bot.Order
 
 	fmt.Println(jsonData)
 
-	//TODO сюда нужно написать функцию, которая бы забирала настройки из тг бота
-	option, err := CreateOptions([]string{"PI_XBTUSD"}, "1m")
+	// TODO сюда нужно написать функцию, которая бы забирала настройки из тг бота
+	option, err := addition.CreateOptions([]string{"PI_XBTUSD"}, "1m")
 	if err != nil {
-		errHandler.UnknownPeriod(err)
-		//TODO не совершаю коннект, а боту отправляю информацию, что нужно бы период переписать
+		MyErrors.UnknownPeriod(err)
+		// TODO не совершаю коннект, а боту отправляю информацию, что нужно бы период переписать
 	}
 
-	canChan, err := api.connServ.GetCandles(api.Ws, wg, api.Ctx, option)
-	if err != nil {
-		errHandler.GetCandlesErr(err)
-	}
+	canChan := api.connServ.GetCandles(api.Ws, wg, api.Ctx, option)
 
 	api.OrderListener(wg)
 	for {
