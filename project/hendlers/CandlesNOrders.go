@@ -15,8 +15,19 @@ type EventMsg struct {
 	ProductId string     `json:"product_id,omitempty"`
 }
 
+type OrderExecution struct {
+	LimitPrice float32 `json:"limitPrice"`
+	Quantity   int     `json:"quantity"`
+	Side       string  `json:"side"`
+}
+
+type OrVent struct {
+	Type     string         `json:"type"`
+	Executed OrderExecution `json:"orderPriorExecution"`
+}
+
 type SendStatus struct {
-	Status string `json:"status"`
+	OrEvent []OrVent `json:"orderEvents"`
 }
 
 type ResponseMsg struct {

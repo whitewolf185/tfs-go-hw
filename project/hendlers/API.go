@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"main.go/project/MyErrors"
 	"main.go/project/addition"
-	tg_bot "main.go/project/tg-bot"
 	"net/http"
 	"net/url"
 	"sync"
@@ -33,10 +32,14 @@ type API struct {
 	Ctx      context.Context
 	cancel   context.CancelFunc
 	connServ connectionService
-	orChan   chan tg_bot.Orders
+
+	orChan    chan addition.Orders
+	dBQueChan chan addition.Query
+	tgQueChan chan addition.Query
 }
 
-func MakeAPI(service connectionService, ctx context.Context, orChan chan tg_bot.Orders) API {
+func MakeAPI(service connectionService, ctx context.Context,
+	orChan chan addition.Orders, dbChan, tgChan chan addition.Query) *API {
 	var api API
 	tokens := addition.TakeAPITokens()
 	api.apiKeyPrivate = tokens.Private
@@ -46,8 +49,10 @@ func MakeAPI(service connectionService, ctx context.Context, orChan chan tg_bot.
 	api.connServ = service
 	api.Ctx, api.cancel = context.WithCancel(ctx)
 	api.orChan = orChan
+	api.dBQueChan = dbChan
+	api.tgQueChan = tgChan
 
-	return api
+	return &api
 }
 
 func (obj *API) generateAuthent(PostData, endpontPath string) (string, error) {
@@ -139,6 +144,11 @@ func (obj *API) PingPong(wg *sync.WaitGroup) {
 
 }
 
+// SendOrder формирует заказ на покупку валюты, чтобы затем отправить по каналу addition.Orders
+func (obj *API) SendOrder(size int) {
+
+}
+
 // OrderListener pipeline служащий для того, чтобы заниматься отправкой Orders по RESTAPI с целью покупки или продажи валюты
 func (obj *API) OrderListener(wg *sync.WaitGroup) {
 	wg.Add(1)
@@ -189,14 +199,20 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 				if reqMsg.Result != "success" {
 					MyErrors.OrderSentErr("request do not have result success")
 					err = MyErrors.OrderNotSuccess
-				} else if reqMsg.Status.Status != "placed" {
+				} else if reqMsg.Status.OrEvent[0].Type != "EXECUTION" {
 					MyErrors.OrderSentErr("cannot do this operation with ticket right now")
 					err = MyErrors.StatusNotPlaced
 				}
-				if err != nil {
-					// не записывать в БД
+
+				// отправка заказа в БД
+				if err == nil {
+					var query addition.Query
+					query.LimitPrice = reqMsg.Status.OrEvent[0].Executed.LimitPrice
+					query.Size = reqMsg.Status.OrEvent[0].Executed.Quantity
+					query.Type = reqMsg.Status.OrEvent[0].Executed.Side
+					obj.dBQueChan <- query
+					obj.tgQueChan <- query
 				}
-				// записывать в БД
 			}
 		}
 	}()

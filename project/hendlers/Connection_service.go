@@ -27,6 +27,10 @@ type Unsubscriber interface {
 	Unsubscribe(ws *websocket.Conn) error
 }
 
+type SubEvent struct {
+	Event string `json:"event"`
+}
+
 type WSMsg struct {
 	Event   string   `json:"event"`
 	Feed    string   `json:"feed"`
@@ -40,6 +44,7 @@ type Connection struct {
 	ws *websocket.Conn
 }
 
+// candleStream -- функция-обработчик отправки Orders
 func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) chan EventMsg {
 	canChan := make(chan EventMsg)
 
@@ -100,13 +105,12 @@ func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx con
 		MyErrors.WSReadMsgErr(err)
 	}
 
-	jsonData := make(map[string]interface{})
-
-	_ = json.Unmarshal(data, &jsonData)
-
+	jsonData := SubEvent{}
+	if err = json.Unmarshal(data, &jsonData); err != nil {
+		MyErrors.UnmarshalErr(err)
+	}
 	fmt.Println(jsonData)
-
-	if jsonData["event"] != "subscribed" {
+	if jsonData.Event != "subscribed" {
 		MyErrors.SubErr()
 	}
 

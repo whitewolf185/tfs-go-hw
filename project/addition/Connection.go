@@ -3,6 +3,7 @@ package addition
 import (
 	"main.go/project/MyErrors"
 	"os"
+	"strconv"
 )
 
 type WSTokens struct {
@@ -32,33 +33,6 @@ type Options struct {
 	CanPer CandlePeriod
 }
 
-func CreateOptions(ticket []string, canPer string) (Options, error) {
-	var (
-		option Options
-		err    error
-	)
-	option.Ticket = ticket
-	option.CanPer, err = strToCanPer(canPer)
-	if err != nil {
-		return Options{}, err
-	}
-
-	return option, nil
-}
-
-func strToCanPer(period string) (CandlePeriod, error) {
-	switch period {
-	case "1m":
-		return CandlePeriod1m, nil
-	case "2m":
-		return CandlePeriod2m, nil
-	case "1h":
-		return CandlePeriod1h, nil
-	default:
-		return "", MyErrors.ErrUnknownPeriod
-	}
-}
-
 // TakeAPITokens функция, которая выдает API токены.
 func TakeAPITokens() WSTokens {
 	var (
@@ -77,4 +51,13 @@ func TakeAPITokens() WSTokens {
 	}
 
 	return result
+}
+
+func ConvertToFloat(price string) float32 {
+	result, err := strconv.ParseFloat(price, 32)
+	if err != nil {
+		MyErrors.ConvertErr(err)
+	}
+
+	return float32(result)
 }
