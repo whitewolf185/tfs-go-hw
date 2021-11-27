@@ -207,6 +207,7 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 				// отправка заказа в БД
 				if err == nil {
 					var query addition.Query
+					query.Ticket = reqMsg.Status.OrEvent[0].Executed.Ticket
 					query.LimitPrice = reqMsg.Status.OrEvent[0].Executed.LimitPrice
 					query.Size = reqMsg.Status.OrEvent[0].Executed.Quantity
 					query.Type = reqMsg.Status.OrEvent[0].Executed.Side

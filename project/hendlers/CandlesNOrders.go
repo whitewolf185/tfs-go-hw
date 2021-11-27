@@ -16,6 +16,7 @@ type EventMsg struct {
 }
 
 type OrderExecution struct {
+	Ticket     string  `json:"symbol"`
 	LimitPrice float32 `json:"limitPrice"`
 	Quantity   int     `json:"quantity"`
 	Side       string  `json:"side"`

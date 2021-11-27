@@ -14,7 +14,7 @@ var (
 )
 
 func WSConnectErr(err error) {
-	log.Fatalf("Problem with WS connect.  Error: %s", err.Error())
+	log.Panicf("Problem with WS connect.  Error: %s", err.Error())
 }
 
 func WSReadMsgErr(err error) {
@@ -83,6 +83,10 @@ func TgBotErr(err error) {
 
 func TgBotUpdateErr(err error) {
 	log.Errorf("TgBot Update error.  Error: %s", err)
+}
+
+func DBConnectionErr(err error) {
+	log.Fatalf("Cannot connect to DB.  Error: %s", err)
 }
 
 func DBCloseConnErr(err error) {

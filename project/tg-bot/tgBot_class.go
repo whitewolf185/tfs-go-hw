@@ -12,7 +12,7 @@ import (
 
 type TgBot struct {
 	TgAPI  *tgbotapi.BotAPI
-	mtx    *sync.Mutex
+	mtx    sync.Mutex
 	chatID int64
 
 	orChan  chan addition.Orders
@@ -22,7 +22,7 @@ type TgBot struct {
 	cancel context.CancelFunc
 }
 
-func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan addition.Query) TgBot {
+func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan addition.Query) *TgBot {
 	var (
 		bot TgBot
 		err error
@@ -36,7 +36,7 @@ func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan ad
 	bot.orChan = orChan
 	bot.queChan = queChan
 
-	return bot
+	return &bot
 }
 
 func (bot *TgBot) SendOrder(orderType OrdersTypes, ticket string) {
@@ -99,9 +99,12 @@ func (bot *TgBot) OrderHandler(wg *sync.WaitGroup) {
 	}()
 }
 
-func (bot *TgBot) checkOption(option addition.Options) bool {
+func (bot *TgBot) checkOption(option addition.Options, started *bool) bool {
 	if option.CanPer == "" {
 		bot.SendMessage("Вы забыли ввести настройки. Введите команду /option")
+		return true
+	}
+	if !*started {
 		return true
 	}
 	return false

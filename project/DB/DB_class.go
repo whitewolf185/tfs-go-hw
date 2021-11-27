@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const OrderQuery = "INSERT INTO operations (ordertime,type, size, limitprice) VALUES (now(),$1, $2, $3);"
+const OrderQuery = "INSERT INTO operations (ordertime,ticket,type, size, limitprice) VALUES (now(),$1, $2, $3, $4);"
 
 type DataBase struct {
 	conn *pgx.Conn
@@ -22,6 +22,11 @@ type DataBase struct {
 func MakeDataBase(ctx context.Context) *DataBase {
 	var db DataBase
 	db.ctx, db.cancel = context.WithCancel(ctx)
+	err := db.Connect()
+	if err != nil {
+		MyErrors.DBConnectionErr(err)
+		return nil
+	}
 
 	return &db
 }
@@ -65,7 +70,7 @@ func (db *DataBase) QueryHandler(wg *sync.WaitGroup) chan addition.Query {
 				return
 
 			case query := <-queChan:
-				_, err := db.conn.Exec(db.ctx, OrderQuery, query.Type, query.Size, query.LimitPrice)
+				_, err := db.conn.Exec(db.ctx, OrderQuery, query.Ticket, query.Type, query.Size, query.LimitPrice)
 				if err != nil {
 					MyErrors.DBExecErr(err)
 				}

@@ -34,7 +34,7 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 		}
 
 		var option addition.Options
-
+		started := false
 		for {
 			select {
 			case update := <-updates:
@@ -51,10 +51,10 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 				case addition.Start:
 					tgBot.chatID = update.Message.Chat.ID
 					tgBot.SendMessage("Приветики")
+					started = true
 					continue
 				case addition.OptionMsg:
-					if tgBot.chatID == 0 {
-						tgBot.SendMessageID("Отправьте, пожалуйста, команду /start", update.Message.Chat.ID)
+					if !started {
 						continue
 					}
 					if option.CanPer != "" {
@@ -74,27 +74,27 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 
 					optionChan <- option
 				case addition.BuyNow:
-					if tgBot.checkOption(option) {
+					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
 					tgBot.SendOrder(BuyOrder, option.Ticket[0])
 
 				case addition.SellNow:
-					if tgBot.checkOption(option) {
+					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
 					tgBot.SendOrder(SellOrder, option.Ticket[0])
 
 				case addition.StopLoss:
-					if tgBot.checkOption(option) {
+					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
 					// todo нужно запрашивать цену и сколько продавать
 				case addition.TakeProfit:
-					if tgBot.checkOption(option) {
+					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
