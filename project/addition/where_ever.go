@@ -2,8 +2,9 @@ package addition
 
 import (
 	"io/ioutil"
-	"main.go/project/MyErrors"
 	"os"
+
+	"main.go/project/addition/MyErrors"
 )
 
 // Orders структура, используемая для того, чтобы отправлять запросы на покупку или продажу валюту

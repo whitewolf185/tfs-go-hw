@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
-	"main.go/project/MyErrors"
-	"main.go/project/addition"
 	"sync"
 	"time"
+
+	"main.go/project/addition"
+	"main.go/project/addition/MyErrors"
+
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

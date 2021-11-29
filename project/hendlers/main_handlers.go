@@ -3,10 +3,12 @@ package hendlers
 import (
 	"context"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
-	"main.go/project/MyErrors"
-	"main.go/project/addition"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
+
+	"main.go/project/addition"
+	"main.go/project/addition/MyErrors"
 )
 
 func HandStart(ctx context.Context, wg *sync.WaitGroup,

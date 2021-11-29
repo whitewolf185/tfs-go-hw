@@ -5,8 +5,8 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
-	"main.go/project/MyErrors"
 	"main.go/project/addition"
+	"main.go/project/addition/MyErrors"
 	"sync"
 )
 

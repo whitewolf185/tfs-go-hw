@@ -8,14 +8,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
-	"main.go/project/MyErrors"
-	"main.go/project/addition"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
+
+	"main.go/project/addition"
+	"main.go/project/addition/MyErrors"
 )
 
 type connectionService interface {

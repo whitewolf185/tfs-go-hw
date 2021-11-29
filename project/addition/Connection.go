@@ -1,9 +1,10 @@
 package addition
 
 import (
-	"main.go/project/MyErrors"
 	"os"
 	"strconv"
+
+	"main.go/project/addition/MyErrors"
 )
 
 type WSTokens struct {

@@ -2,18 +2,19 @@ package DB
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4"
-	"main.go/project/MyErrors"
-	"main.go/project/addition"
 	"sync"
 	"time"
+
+	"github.com/jackc/pgx/v4"
+
+	"main.go/project/addition"
+	"main.go/project/addition/MyErrors"
 )
 
 const OrderQuery = "INSERT INTO operations (ordertime,ticket,type, size, limitprice) VALUES (now(),$1, $2, $3, $4);"
 
 type DataBase struct {
 	conn *pgx.Conn
-	//orChan chan tg_bot.Orders
 
 	ctx    context.Context
 	cancel context.CancelFunc

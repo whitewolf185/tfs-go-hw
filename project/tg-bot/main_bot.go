@@ -3,8 +3,8 @@ package tg_bot
 import (
 	"context"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"main.go/project/MyErrors"
 	"main.go/project/addition"
+	"main.go/project/addition/MyErrors"
 	"sync"
 )
 

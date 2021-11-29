@@ -2,8 +2,9 @@ package addition
 
 import (
 	"fmt"
-	"main.go/project/MyErrors"
 	"regexp"
+
+	"main.go/project/addition/MyErrors"
 )
 
 const (

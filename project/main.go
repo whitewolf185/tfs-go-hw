@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
-	"main.go/project/DB"
-	"main.go/project/hendlers"
-	tg_bot "main.go/project/tg-bot"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	tg_bot "main.go/project/tg-bot"
+
+	"main.go/project/DB"
+	"main.go/project/hendlers"
 )
 
 func main() {
