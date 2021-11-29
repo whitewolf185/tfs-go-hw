@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"main.go/project/addition"
-	"main.go/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/addition"
+	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
 )
 
 const (

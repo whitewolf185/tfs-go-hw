@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"main.go/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
 )
 
 type TakeProfitCh struct {

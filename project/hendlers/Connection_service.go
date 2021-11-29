@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"main.go/project/addition"
-	"main.go/project/addition/add_Conn"
 	"sync"
 	"time"
 
-	"main.go/project/addition/MyErrors"
-
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/whitewolf185/fs-go-hw/project/addition"
+	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/addition/add_Conn"
 )
 
 const (
@@ -21,14 +21,6 @@ const (
 	pongWait   = 60 * time.Second
 	pingPeriod = (pongWait * 9) / 10
 )
-
-type GetterCan interface {
-	GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) chan add_Conn.EventMsg
-}
-
-type Unsubscriber interface {
-	Unsubscribe(ws *websocket.Conn) error
-}
 
 type SubEvent struct {
 	Event string `json:"event"`
@@ -48,7 +40,7 @@ type Connection struct {
 }
 
 // candleStream -- функция-обработчик отправки Orders
-func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) chan add_Conn.EventMsg {
+func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (chan add_Conn.EventMsg, error) {
 	canChan := make(chan add_Conn.EventMsg)
 
 	wg.Add(1)
@@ -68,7 +60,7 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) cha
 				var event add_Conn.EventMsg
 				err := obj.ws.ReadJSON(&event)
 				if err != nil {
-					MyErrors.WSReadMsgErr(errors.New("In cansleStream" + err.Error()))
+					_ = MyErrors.WSReadMsgErr(errors.New("In cansleStream" + err.Error()))
 					close(canChan)
 					return
 				}
@@ -82,10 +74,10 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) cha
 		}
 	}()
 
-	return canChan
+	return canChan, nil
 }
 
-func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) chan add_Conn.EventMsg {
+func (obj Connection) prepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) (chan add_Conn.EventMsg, error) {
 	obj.SubMessage.Event = "subscribe"
 	obj.SubMessage.Feed = "candles_trade_" + string(options.CanPer)
 	obj.SubMessage.Tickets = options.Ticket
@@ -94,6 +86,7 @@ func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx con
 	msg, err := json.Marshal(obj.SubMessage)
 	if err != nil {
 		MyErrors.MarshalErr(err)
+		return nil, err
 	}
 
 	fmt.Println(string(msg))
@@ -101,23 +94,47 @@ func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx con
 	err = ws.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
 		MyErrors.WSWriteMsgErr(err)
+		return nil, err
 	}
 
 	_, data, err := ws.ReadMessage()
 	if err != nil {
-		MyErrors.WSReadMsgErr(err)
+		return nil, MyErrors.WSReadMsgErr(err)
 	}
 
 	jsonData := SubEvent{}
 	if err = json.Unmarshal(data, &jsonData); err != nil {
-		MyErrors.UnmarshalErr(err)
+		return nil, MyErrors.UnmarshalErr(err)
 	}
 	fmt.Println(jsonData)
 	if jsonData.Event != "subscribed" {
-		MyErrors.SubErr()
+		return nil, MyErrors.SubErr
 	}
 
 	return obj.candleStream(wg, ctx)
+}
+
+func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, optionChan chan addition.Options) (chan add_Conn.EventMsg, error) {
+	log.Info("Waiting fot incoming options")
+	option, ok := <-optionChan
+	if !ok {
+		return nil, MyErrors.OptionChanErr
+	}
+	log.Info("Handler caught options")
+
+	canChan, err := obj.prepareCandles(ws, wg, ctx, option)
+	for i := 0; err != nil && i < 10; i++ {
+		log.Errorln(err)
+		log.Info("Some err was caught. Waiting fot another incoming options... Try", i)
+		option, ok = <-optionChan
+		if !ok {
+			return nil, MyErrors.OptionChanErr
+		}
+		log.Info("Handler caught options")
+		canChan, err = obj.prepareCandles(ws, wg, ctx, option)
+	}
+
+	return canChan, err
 }
 
 func (obj Connection) Unsubscribe(ws *websocket.Conn) error {

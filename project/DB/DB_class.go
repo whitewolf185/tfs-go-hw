@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"main.go/project/addition"
-	"main.go/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
 )
 
 const OrderQuery = "INSERT INTO operations (ordertime,ticket,type, size, limitprice) VALUES (now(),$1, $2, $3, $4);"
@@ -58,8 +58,8 @@ func (db *DataBase) Connect() error {
 	return nil
 }
 
-func (db *DataBase) QueryHandler(wg *sync.WaitGroup) chan addition.Query {
-	queChan := make(chan addition.Query)
+func (db *DataBase) QueryHandler(wg *sync.WaitGroup) chan add_DB.Query {
+	queChan := make(chan add_DB.Query)
 
 	wg.Add(1)
 	go func() {

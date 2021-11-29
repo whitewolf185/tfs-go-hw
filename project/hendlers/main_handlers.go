@@ -7,11 +7,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"main.go/project/addition"
-	"main.go/project/addition/MyErrors"
-	"main.go/project/addition/TG_bot"
-	"main.go/project/addition/add_Conn"
-	"main.go/project/addition/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/addition"
+	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/addition/TG_bot"
+	"github.com/whitewolf185/fs-go-hw/project/addition/add_Conn"
+	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
 )
 
 func HandStart(ctx context.Context, wg *sync.WaitGroup,
@@ -30,7 +30,7 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 
 		_, data, err := api.Ws.ReadMessage()
 		if err != nil {
-			MyErrors.WSReadMsgErr(err)
+			_ = MyErrors.WSReadMsgErr(err)
 		}
 		jsonData := make(map[string]interface{})
 		_ = json.Unmarshal(data, &jsonData)
@@ -42,7 +42,10 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 			return
 		}
 		log.Info("Handler caught options")
-		canChan := api.connServ.GetCandles(api.Ws, wg, api.Ctx, option)
+		canChan, err := api.connServ.GetCandles(api.Ws, wg, api.Ctx, optionChan)
+		if err != nil {
+			MyErrors.GetCandlesErr()
+		}
 
 		api.OrderListener(wg)
 

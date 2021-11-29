@@ -7,10 +7,9 @@ import (
 	"sync"
 	"syscall"
 
-	tg_bot "main.go/project/tg-bot"
-
-	"main.go/project/DB"
-	"main.go/project/hendlers"
+	"github.com/whitewolf185/fs-go-hw/project/DB"
+	"github.com/whitewolf185/fs-go-hw/project/hendlers"
+	tg_bot "github.com/whitewolf185/fs-go-hw/project/tg-bot"
 )
 
 func main() {

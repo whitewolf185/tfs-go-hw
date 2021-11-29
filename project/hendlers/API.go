@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"main.go/project/addition/TG_bot"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -18,11 +17,21 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"main.go/project/addition"
-	"main.go/project/addition/MyErrors"
-	"main.go/project/addition/add_Conn"
-	"main.go/project/addition/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/addition"
+	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/addition/TG_bot"
+	"github.com/whitewolf185/fs-go-hw/project/addition/add_Conn"
+	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
 )
+
+type GetterCan interface {
+	GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context,
+		options chan addition.Options) (chan add_Conn.EventMsg, error)
+}
+
+type Unsubscriber interface {
+	Unsubscribe(ws *websocket.Conn) error
+}
 
 type connectionService interface {
 	GetterCan

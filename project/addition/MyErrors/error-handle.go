@@ -2,6 +2,7 @@ package MyErrors
 
 import (
 	"errors"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -12,14 +13,17 @@ var (
 	ErrUnknownPeriod = errors.New("unknown period")
 	ErrUnknownTicket = errors.New("unknown Ticket")
 	NoMatches        = errors.New("No matches\n")
+	SubErr           = errors.New("subscribe failed")
+	OptionChanErr    = errors.New("Options channel has closed\n")
 )
 
 func WSConnectErr(err error) {
 	log.Panicf("Problem with WS connect.  Error: %s", err.Error())
 }
 
-func WSReadMsgErr(err error) {
-	log.Fatalf("Problem with WebSocket message read.  Error: %s", err.Error())
+func WSReadMsgErr(err error) error {
+	tmp := fmt.Sprintf("Problem with WebSocket message read.  Error: %s", err.Error())
+	return errors.New(tmp)
 }
 
 func WSWriteMsgErr(err error) {
@@ -34,6 +38,10 @@ func TokensReadErr(Type string) {
 	log.Fatalf("Cant see ENV value %s", Type)
 }
 
+func GetCandlesErr() {
+	log.Fatalf("Something fatal was happend")
+}
+
 func ReadFileErr(Type string, err error) {
 	log.Fatalf("Problem with reading file %s.  Error: %s", Type, err.Error())
 }
@@ -42,12 +50,9 @@ func MarshalErr(err error) {
 	log.Errorf("Cannot Marshal json. Error: %s", err.Error())
 }
 
-func UnmarshalErr(err error) {
-	log.Errorf("Cannot Unarshal json. Error: %s", err.Error())
-}
-
-func SubErr() {
-	log.Errorln("subscribe failed")
+func UnmarshalErr(err error) error {
+	tmp := fmt.Sprintf("Cannot Unarshal json. Error: %s", err.Error())
+	return errors.New(tmp)
 }
 
 func PingErr(err error) {

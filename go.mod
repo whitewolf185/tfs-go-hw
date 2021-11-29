@@ -1,4 +1,4 @@
-module main.go
+module github.com/whitewolf185/fs-go-hw
 
 go 1.17
 
