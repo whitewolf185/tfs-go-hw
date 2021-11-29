@@ -1,6 +1,7 @@
-package addition
+package add_Conn
 
 import (
+	"main.go/project/addition"
 	"os"
 	"strconv"
 
@@ -13,26 +14,11 @@ type WSTokens struct {
 	Url     string
 }
 
-type CandlePeriod string
-
-const (
-	CandlePeriod1m CandlePeriod = "1m"
-	CandlePeriod2m CandlePeriod = "2m"
-	CandlePeriod1h CandlePeriod = "1h"
-)
-
 const (
 	privateTokenPathENV = "TOKEN_PATH_PRIVATE"
 	publicTokenPathENV  = "TOKEN_PATH_PUBLIC"
 	urlWebSocketENV     = "WS_URL"
 )
-
-// Options -- структура для записи необходимых для подписки на свечки настроек.
-// Например, для того, чтобы настроить период свечей и какой тикет слушать.
-type Options struct {
-	Ticket []string
-	CanPer CandlePeriod
-}
 
 // TakeAPITokens функция, которая выдает API токены.
 func TakeAPITokens() WSTokens {
@@ -42,8 +28,8 @@ func TakeAPITokens() WSTokens {
 	)
 
 	// APIkey parsing
-	result.Private = ENVParser(privateTokenPathENV)
-	result.Public = ENVParser(publicTokenPathENV)
+	result.Private = addition.ENVParser(privateTokenPathENV)
+	result.Public = addition.ENVParser(publicTokenPathENV)
 
 	// URL WB parsing
 	result.Url, ok = os.LookupEnv(urlWebSocketENV)

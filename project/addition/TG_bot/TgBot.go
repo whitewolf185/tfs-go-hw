@@ -1,9 +1,10 @@
-package addition
+package TG_bot
 
 import (
 	"fmt"
 	"regexp"
 
+	"main.go/project/addition"
 	"main.go/project/addition/MyErrors"
 )
 
@@ -12,15 +13,6 @@ const (
 )
 
 type MsgType int
-
-type TakeProfitCh struct {
-	TakeFl float32
-	Size   int
-}
-type StopLossCh struct {
-	StopFl float32
-	Size   int
-}
 
 var commands = [...]string{
 	"/buy",        // 0
@@ -40,10 +32,17 @@ const (
 	TakeProfit                // 5
 )
 
+type OrdersTypes int
+
+const (
+	BuyOrder OrdersTypes = iota
+	SellOrder
+)
+
 func TakeTgBotToken() string {
 
 	// TgBot token parser
-	token := ENVParser(TgTokenENV)
+	token := addition.ENVParser(TgTokenENV)
 
 	return token
 }
@@ -64,32 +63,32 @@ func MessageType(msg string) (MsgType, error) {
 	return -1, MyErrors.NoMatches
 }
 
-func CreateOptions(ticket string, canPer string) (Options, error) {
+func CreateOptions(ticket string, canPer string) (addition.Options, error) {
 	var (
-		option Options
+		option addition.Options
 		err    error
 	)
 	tick, err := strToTicket(ticket)
 	if err != nil {
-		return Options{}, err
+		return addition.Options{}, err
 	}
 	option.Ticket = tick
 	option.CanPer, err = strToCanPer(canPer)
 	if err != nil {
-		return Options{}, err
+		return addition.Options{}, err
 	}
 
 	return option, nil
 }
 
-func strToCanPer(period string) (CandlePeriod, error) {
+func strToCanPer(period string) (addition.CandlePeriod, error) {
 	switch period {
 	case "1m":
-		return CandlePeriod1m, nil
+		return addition.CandlePeriod1m, nil
 	case "2m":
-		return CandlePeriod2m, nil
+		return addition.CandlePeriod2m, nil
 	case "1h":
-		return CandlePeriod1h, nil
+		return addition.CandlePeriod1h, nil
 	default:
 		return "", MyErrors.ErrUnknownPeriod
 	}

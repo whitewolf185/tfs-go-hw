@@ -1,4 +1,4 @@
-package addition
+package add_DB
 
 type Query struct {
 	Ticket     string

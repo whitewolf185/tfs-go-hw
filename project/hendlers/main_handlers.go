@@ -9,10 +9,13 @@ import (
 
 	"main.go/project/addition"
 	"main.go/project/addition/MyErrors"
+	"main.go/project/addition/TG_bot"
+	"main.go/project/addition/add_Conn"
+	"main.go/project/addition/add_DB"
 )
 
 func HandStart(ctx context.Context, wg *sync.WaitGroup,
-	orChan chan addition.Orders, optionChan chan addition.Options, DBQueChan chan addition.Query, TGQueChan chan addition.Query,
+	orChan chan addition.Orders, optionChan chan addition.Options, DBQueChan chan add_DB.Query, TGQueChan chan add_DB.Query,
 	TGTakeChan chan addition.TakeProfitCh, TGStopChan chan addition.StopLossCh) {
 	wg.Add(1)
 	go func() {
@@ -45,7 +48,7 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 
 		var stop addition.StopLossCh
 		var take addition.TakeProfitCh
-		var prevCan EventMsg // возможно нужен будет, чтобы провернуть схему, которая нужна, чтобы убрать ошибочное срабатывание
+		var prevCan add_Conn.EventMsg // возможно нужен будет, чтобы провернуть схему, которая нужна, чтобы убрать ошибочное срабатывание
 		for {
 			select {
 			case <-ctx.Done():
@@ -56,15 +59,15 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 					prevCan = can
 					continue
 				}
-				canOpen := addition.ConvertToFloat(can.Candle.Open)
-				canClose := addition.ConvertToFloat(can.Candle.Close)
+				canOpen := add_Conn.ConvertToFloat(can.Candle.Open)
+				canClose := add_Conn.ConvertToFloat(can.Candle.Close)
 
 				if (canClose+canOpen)/2 <= stop.StopFl {
-					api.SendOrder(stop.Size)
+					api.SendOrder(TG_bot.SellOrder, option.Ticket[0], stop.Size)
 				}
 
 				if (canClose+canOpen)/2 >= take.TakeFl {
-					api.SendOrder(take.Size)
+					api.SendOrder(TG_bot.BuyOrder, option.Ticket[0], take.Size)
 				}
 
 			case stop = <-TGStopChan:

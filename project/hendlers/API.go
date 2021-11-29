@@ -8,8 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"main.go/project/addition/TG_bot"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,6 +20,8 @@ import (
 
 	"main.go/project/addition"
 	"main.go/project/addition/MyErrors"
+	"main.go/project/addition/add_Conn"
+	"main.go/project/addition/add_DB"
 )
 
 type connectionService interface {
@@ -36,14 +40,14 @@ type API struct {
 	connServ connectionService
 
 	orChan    chan addition.Orders
-	dBQueChan chan addition.Query
-	tgQueChan chan addition.Query
+	dBQueChan chan add_DB.Query
+	tgQueChan chan add_DB.Query
 }
 
 func MakeAPI(service connectionService, ctx context.Context,
-	orChan chan addition.Orders, dbChan, tgChan chan addition.Query) *API {
+	orChan chan addition.Orders, dbChan, tgChan chan add_DB.Query) *API {
 	var api API
-	tokens := addition.TakeAPITokens()
+	tokens := add_Conn.TakeAPITokens()
 	api.apiKeyPrivate = tokens.Private
 	api.apiKeyPublic = tokens.Public
 	api.urlWebSocket = tokens.Url
@@ -147,8 +151,28 @@ func (obj *API) PingPong(wg *sync.WaitGroup) {
 }
 
 // SendOrder формирует заказ на покупку валюты, чтобы затем отправить по каналу addition.Orders
-func (obj *API) SendOrder(size int) {
+func (obj *API) SendOrder(orderType TG_bot.OrdersTypes, ticket string, size int) {
+	var order addition.Orders
 
+	order.Endpoint = "/api/v3/sendorder"
+
+	dataP := make(map[string]string)
+	dataP["orderType"] = "mkt"
+	dataP["symbol"] = ticket
+	dataP["size"] = strconv.Itoa(size)
+
+	switch orderType {
+	case TG_bot.BuyOrder:
+		dataP["side"] = "buy"
+
+	case TG_bot.SellOrder:
+		dataP["side"] = "sell"
+	}
+
+	order.PostData = dataP
+
+	obj.orChan <- order
+	log.Println("Order was sent")
 }
 
 // OrderListener pipeline служащий для того, чтобы заниматься отправкой Orders по RESTAPI с целью покупки или продажи валюты
@@ -188,7 +212,7 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 					MyErrors.HTTPRequestErr(err)
 				}
 
-				var reqMsg ResponseMsg
+				var reqMsg add_Conn.ResponseMsg
 				if err = json.NewDecoder(req.Body).Decode(&reqMsg); err != nil {
 					panic(err)
 				}
@@ -208,7 +232,7 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 
 				// отправка заказа в БД
 				if err == nil {
-					var query addition.Query
+					var query add_DB.Query
 					query.Ticket = reqMsg.Status.OrEvent[0].Executed.Ticket
 					query.LimitPrice = reqMsg.Status.OrEvent[0].Executed.LimitPrice
 					query.Size = reqMsg.Status.OrEvent[0].Executed.Quantity

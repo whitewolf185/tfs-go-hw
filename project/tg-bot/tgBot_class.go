@@ -7,27 +7,28 @@ import (
 	"log"
 	"main.go/project/addition"
 	"main.go/project/addition/MyErrors"
+	"main.go/project/addition/TG_bot"
+	"main.go/project/addition/add_DB"
 	"sync"
 )
 
 type TgBot struct {
 	TgAPI  *tgbotapi.BotAPI
-	mtx    sync.Mutex
 	chatID int64
 
 	orChan  chan addition.Orders
-	queChan chan addition.Query
+	queChan chan add_DB.Query
 
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
-func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan addition.Query) *TgBot {
+func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan add_DB.Query) *TgBot {
 	var (
 		bot TgBot
 		err error
 	)
-	token := addition.TakeTgBotToken()
+	token := TG_bot.TakeTgBotToken()
 	bot.TgAPI, err = tgbotapi.NewBotAPI(token)
 	if err != nil {
 		MyErrors.TgBotErr(err)
@@ -39,7 +40,7 @@ func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan ad
 	return &bot
 }
 
-func (bot *TgBot) SendOrder(orderType OrdersTypes, ticket string) {
+func (bot *TgBot) SendOrder(orderType TG_bot.OrdersTypes, ticket string) {
 	var order addition.Orders
 
 	order.Endpoint = "/api/v3/sendorder"
@@ -50,20 +51,17 @@ func (bot *TgBot) SendOrder(orderType OrdersTypes, ticket string) {
 	dataP["size"] = "1"
 
 	switch orderType {
-	case BuyOrder:
+	case TG_bot.BuyOrder:
 		dataP["side"] = "buy"
 
-	case SellOrder:
+	case TG_bot.SellOrder:
 		dataP["side"] = "sell"
 	}
 
 	order.PostData = dataP
 
-	bot.mtx.Lock()
 	bot.orChan <- order
 	log.Println("Order was sent")
-	bot.mtx.Unlock()
-
 }
 
 func (bot *TgBot) SendMessage(message string) {

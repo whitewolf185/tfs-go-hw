@@ -2,17 +2,21 @@ package tg_bot
 
 import (
 	"context"
+	"main.go/project/addition/TG_bot"
+	"main.go/project/addition/add_DB"
+	"sync"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+
 	"main.go/project/addition"
 	"main.go/project/addition/MyErrors"
-	"sync"
 )
 
-func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, chan addition.Options, chan addition.Query,
+func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, chan addition.Options, chan add_DB.Query,
 	chan addition.TakeProfitCh, chan addition.StopLossCh) {
 	orChan := make(chan addition.Orders)
 	optionChan := make(chan addition.Options)
-	queryChan := make(chan addition.Query)
+	queryChan := make(chan add_DB.Query)
 	takeChan := make(chan addition.TakeProfitCh)
 	stopChan := make(chan addition.StopLossCh)
 
@@ -42,18 +46,18 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 					continue
 				}
 
-				Type, err := addition.MessageType(update.Message.Text)
+				Type, err := TG_bot.MessageType(update.Message.Text)
 				if err != nil {
 					MyErrors.RegexpErr(err)
 					continue
 				}
 				switch Type {
-				case addition.Start:
+				case TG_bot.Start:
 					tgBot.chatID = update.Message.Chat.ID
 					tgBot.SendMessage("Приветики")
 					started = true
 					continue
-				case addition.OptionMsg:
+				case TG_bot.OptionMsg:
 					if !started {
 						continue
 					}
@@ -65,7 +69,7 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 					ticket := <-updates
 					tgBot.SendMessage("Теперь отправьте период свечки")
 					canPer := <-updates
-					option, err = addition.CreateOptions(ticket.Message.Text, canPer.Message.Text)
+					option, err = TG_bot.CreateOptions(ticket.Message.Text, canPer.Message.Text)
 					if err != nil {
 						tgBot.SendMessage("Вы что-то сделали не так. Посмотрите логи")
 						MyErrors.TgBotMsgErr(err)
@@ -73,27 +77,27 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 					}
 
 					optionChan <- option
-				case addition.BuyNow:
+				case TG_bot.BuyNow:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
-					tgBot.SendOrder(BuyOrder, option.Ticket[0])
+					tgBot.SendOrder(TG_bot.BuyOrder, option.Ticket[0])
 
-				case addition.SellNow:
+				case TG_bot.SellNow:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
-					tgBot.SendOrder(SellOrder, option.Ticket[0])
+					tgBot.SendOrder(TG_bot.SellOrder, option.Ticket[0])
 
-				case addition.StopLoss:
+				case TG_bot.StopLoss:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
 					// todo нужно запрашивать цену и сколько продавать
-				case addition.TakeProfit:
+				case TG_bot.TakeProfit:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}

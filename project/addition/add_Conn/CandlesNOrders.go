@@ -1,4 +1,4 @@
-package hendlers
+package add_Conn
 
 type SoloCandle struct {
 	Time   int64  `json:"time"`
