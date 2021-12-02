@@ -1,22 +1,22 @@
-package tg_bot
+package tgBot
 
 import (
 	"context"
-	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/TG_bot"
-	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/addTGbot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
 )
 
-func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, chan addition.Options, chan add_DB.Query,
+func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, chan addition.Options, chan addDB.Query,
 	chan addition.TakeProfitCh, chan addition.StopLossCh) {
 	orChan := make(chan addition.Orders)
 	optionChan := make(chan addition.Options)
-	queryChan := make(chan add_DB.Query)
+	queryChan := make(chan addDB.Query)
 	takeChan := make(chan addition.TakeProfitCh)
 	stopChan := make(chan addition.StopLossCh)
 
@@ -46,18 +46,18 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 					continue
 				}
 
-				Type, err := TG_bot.MessageType(update.Message.Text)
+				Type, err := addTGbot.MessageType(update.Message.Text)
 				if err != nil {
 					MyErrors.RegexpErr(err)
 					continue
 				}
 				switch Type {
-				case TG_bot.Start:
+				case addTGbot.Start:
 					tgBot.chatID = update.Message.Chat.ID
 					tgBot.SendMessage("Приветики")
 					started = true
 					continue
-				case TG_bot.OptionMsg:
+				case addTGbot.OptionMsg:
 					if !started {
 						continue
 					}
@@ -69,7 +69,7 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 					ticket := <-updates
 					tgBot.SendMessage("Теперь отправьте период свечки")
 					canPer := <-updates
-					option, err = TG_bot.CreateOptions(ticket.Message.Text, canPer.Message.Text)
+					option, err = addTGbot.CreateOptions(ticket.Message.Text, canPer.Message.Text)
 					if err != nil {
 						tgBot.SendMessage("Вы что-то сделали не так. Посмотрите логи")
 						MyErrors.TgBotMsgErr(err)
@@ -77,27 +77,27 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 					}
 
 					optionChan <- option
-				case TG_bot.BuyNow:
+				case addTGbot.BuyNow:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
-					tgBot.SendOrder(TG_bot.BuyOrder, option.Ticket[0])
+					tgBot.SendOrder(addTGbot.BuyOrder, option.Ticket[0])
 
-				case TG_bot.SellNow:
+				case addTGbot.SellNow:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
-					tgBot.SendOrder(TG_bot.SellOrder, option.Ticket[0])
+					tgBot.SendOrder(addTGbot.SellOrder, option.Ticket[0])
 
-				case TG_bot.StopLoss:
+				case addTGbot.StopLoss:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
 					// todo нужно запрашивать цену и сколько продавать
-				case TG_bot.TakeProfit:
+				case addTGbot.TakeProfit:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}

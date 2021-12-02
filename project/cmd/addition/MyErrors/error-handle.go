@@ -8,13 +8,13 @@ import (
 )
 
 var (
-	OrderNotSuccess  = errors.New("request do not have result success")
-	StatusNotPlaced  = errors.New("cannot do this operation with ticket right now")
-	ErrUnknownPeriod = errors.New("unknown period")
-	ErrUnknownTicket = errors.New("unknown Ticket")
-	NoMatches        = errors.New("No matches\n")
-	SubErr           = errors.New("subscribe failed")
-	OptionChanErr    = errors.New("Options channel has closed\n")
+	ErrOrderNotSuccess = errors.New("request do not have result success")
+	ErrStatusNotPlaced = errors.New("cannot do this operation with ticket right now")
+	ErrUnknownPeriod   = errors.New("unknown period")
+	ErrUnknownTicket   = errors.New("unknown Ticket")
+	ErrNoMatches       = errors.New("no matches")
+	ErrSub             = errors.New("subscribe failed")
+	ErrOptionChanErr   = errors.New("options channel has closed")
 )
 
 func WSConnectErr(err error) error {
@@ -35,16 +35,16 @@ func APIGenerateErr(err error) {
 	log.Fatalf("Some problem with API generate func.  Error %s", err)
 }
 
-func TokensReadErr(Type string) {
-	log.Fatalf("Cant see ENV value %s", Type)
+func TokensReadErr(tYpe string) {
+	log.Fatalf("Cant see ENV value %s", tYpe)
 }
 
 func GetCandlesErr() {
 	log.Fatalf("Something fatal was happend")
 }
 
-func ReadFileErr(Type string, err error) {
-	log.Fatalf("Problem with reading file %s.  Error: %s", Type, err.Error())
+func ReadFileErr(tYpe string, err error) {
+	log.Fatalf("Problem with reading file %s.  Error: %s", tYpe, err.Error())
 }
 
 func MarshalErr(err error) {
@@ -64,7 +64,7 @@ func UnsubErr(err error) {
 	log.Errorf("Some troble with Unsubscribe.  Error: %s", err)
 }
 
-func BadApiClose(err error) {
+func BadAPIClose(err error) {
 	log.Fatalf("bad Api close.  Error: %s", err)
 }
 
@@ -72,8 +72,8 @@ func HTTPRequestErr(err error) {
 	log.Errorf("Bad request.  Error: %s", err)
 }
 
-func OrderSentErr(Type string) {
-	log.Errorf("Order sent failed because of %s", Type)
+func OrderSentErr(tYpe string) {
+	log.Errorf("Order sent failed because of %s", tYpe)
 }
 
 func BadBodyCloseErr(err error) {

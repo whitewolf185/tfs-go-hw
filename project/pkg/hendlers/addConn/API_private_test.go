@@ -1,4 +1,4 @@
-package add_Conn
+package addConn
 
 import (
 	"net/url"
@@ -8,7 +8,7 @@ import (
 type Gen struct {
 	PostData      string
 	EndpointPath  string
-	ApiKeyPrivate string
+	APIKeyPrivate string
 }
 
 type TestsGenerate struct {
@@ -40,7 +40,7 @@ func TestGenerateAuthent(t *testing.T) {
 	}
 
 	for idx, test := range tests {
-		got, err := GenerateAuthent(test.In.PostData, test.In.EndpointPath, test.In.ApiKeyPrivate)
+		got, err := GenerateAuthent(test.In.PostData, test.In.EndpointPath, test.In.APIKeyPrivate)
 		if err != nil {
 			t.Fatalf("Unexpected Error in test №%d %s\n %s", idx, test.Name, err)
 		}

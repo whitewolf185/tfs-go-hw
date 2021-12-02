@@ -1,4 +1,4 @@
-package add_Conn
+package addConn
 
 import (
 	"os"
@@ -11,7 +11,7 @@ import (
 type WSTokens struct {
 	Private string
 	Public  string
-	Url     string
+	URL     string
 }
 
 const (
@@ -32,7 +32,7 @@ func TakeAPITokens() WSTokens {
 	result.Public = addition.ENVParser(publicTokenPathENV)
 
 	// URL WB parsing
-	result.Url, ok = os.LookupEnv(urlWebSocketENV)
+	result.URL, ok = os.LookupEnv(urlWebSocketENV)
 	if !ok {
 		MyErrors.TokensReadErr(urlWebSocketENV)
 	}

@@ -1,4 +1,4 @@
-package add_Conn
+package addConn
 
 type SoloCandle struct {
 	Time   int64  `json:"time"`
@@ -12,7 +12,7 @@ type SoloCandle struct {
 type EventMsg struct {
 	Candle    SoloCandle `json:"candle"`
 	Result    string     `json:"result,omitempty"`
-	ProductId string     `json:"product_id,omitempty"`
+	ProductID string     `json:"product_id,omitempty"`
 }
 
 type OrderExecution struct {

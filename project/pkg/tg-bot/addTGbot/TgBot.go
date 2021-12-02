@@ -1,4 +1,4 @@
-package TG_bot
+package addTGbot
 
 import (
 	"fmt"
@@ -40,7 +40,6 @@ const (
 )
 
 func TakeTgBotToken() string {
-
 	// TgBot token parser
 	token := addition.ENVParser(TgTokenENV)
 
@@ -48,7 +47,6 @@ func TakeTgBotToken() string {
 }
 
 func MessageType(msg string) (MsgType, error) {
-
 	for i := 0; i < len(commands); i++ {
 		command := fmt.Sprintf("(?i)%s", commands[i])
 		match, err := regexp.MatchString(command, msg)
@@ -60,7 +58,7 @@ func MessageType(msg string) (MsgType, error) {
 		}
 	}
 
-	return -1, MyErrors.NoMatches
+	return -1, MyErrors.ErrNoMatches
 }
 
 func CreateOptions(ticket string, canPer string) (addition.Options, error) {

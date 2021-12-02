@@ -37,10 +37,10 @@ type Orders struct {
 	PostData map[string]string
 }
 
-func ENVParser(ENV string) string {
-	FilePath, ok := os.LookupEnv(ENV)
+func ENVParser(env string) string {
+	FilePath, ok := os.LookupEnv(env)
 	if !ok {
-		MyErrors.TokensReadErr(ENV)
+		MyErrors.TokensReadErr(env)
 	}
 
 	token, err := ioutil.ReadFile(FilePath)

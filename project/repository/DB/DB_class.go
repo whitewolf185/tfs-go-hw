@@ -2,13 +2,13 @@ package DB
 
 import (
 	"context"
-	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
 )
 
 const OrderQuery = "INSERT INTO operations (ordertime,ticket,type, size, limitprice) VALUES (now(),$1, $2, $3, $4);"
@@ -58,8 +58,8 @@ func (db *DataBase) Connect() error {
 	return nil
 }
 
-func (db *DataBase) QueryHandler(wg *sync.WaitGroup) chan add_DB.Query {
-	queChan := make(chan add_DB.Query)
+func (db *DataBase) QueryHandler(wg *sync.WaitGroup) chan addDB.Query {
+	queChan := make(chan addDB.Query)
 
 	wg.Add(1)
 	go func() {

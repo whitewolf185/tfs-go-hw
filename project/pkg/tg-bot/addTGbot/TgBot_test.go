@@ -1,4 +1,4 @@
-package TG_bot
+package addTGbot
 
 import (
 	"testing"
@@ -73,7 +73,7 @@ func TestMessageType(t *testing.T) {
 			"/takeprifit",
 			Result{
 				-1,
-				MyErrors.NoMatches,
+				MyErrors.ErrNoMatches,
 			},
 		},
 		{
@@ -89,7 +89,7 @@ func TestMessageType(t *testing.T) {
 			"asdgadtakeprofit^jD&Sf dad /\n",
 			Result{
 				-1,
-				MyErrors.NoMatches,
+				MyErrors.ErrNoMatches,
 			},
 		},
 	}

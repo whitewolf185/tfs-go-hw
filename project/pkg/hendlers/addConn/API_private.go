@@ -1,4 +1,4 @@
-package add_Conn
+package addConn
 
 import (
 	"crypto/hmac"
@@ -9,10 +9,10 @@ import (
 )
 
 // GenerateAuthent функция, которая генерирует токен под названием authent
-func GenerateAuthent(PostData, endpontPath, apiKeyPrivate string) (string, error) {
+func GenerateAuthent(postData, endpontPath, apiKeyPrivate string) (string, error) {
 	// step 1 and 2
 	sha := sha256.New()
-	src := PostData + endpontPath
+	src := postData + endpontPath
 	sha.Write([]byte(src))
 
 	// step 3

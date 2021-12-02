@@ -17,7 +17,7 @@ func main() {
 	wg := sync.WaitGroup{}
 
 	DBQueChan := DB.StartDB(ctx, &wg)
-	orChan, optionChan, TGQueChan, TGTakeChan, TGStopChan := tg_bot.BotStart(ctx, &wg)
+	orChan, optionChan, TGQueChan, TGTakeChan, TGStopChan := tgBot.BotStart(ctx, &wg)
 	hendlers.HandStart(ctx, &wg, orChan, optionChan, DBQueChan, TGQueChan, TGTakeChan, TGStopChan)
 
 	sigs := make(chan os.Signal, 1)

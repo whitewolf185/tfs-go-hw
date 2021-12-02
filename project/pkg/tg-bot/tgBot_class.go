@@ -1,10 +1,8 @@
-package tg_bot
+package tgBot
 
 import (
 	"context"
 	"fmt"
-	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/TG_bot"
-	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"log"
 	"sync"
 
@@ -12,6 +10,8 @@ import (
 
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/addTGbot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
 )
 
 type TgBot struct {
@@ -19,18 +19,18 @@ type TgBot struct {
 	chatID int64
 
 	orChan  chan addition.Orders
-	queChan chan add_DB.Query
+	queChan chan addDB.Query
 
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
-func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan add_DB.Query) *TgBot {
+func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan addDB.Query) *TgBot {
 	var (
 		bot TgBot
 		err error
 	)
-	token := TG_bot.TakeTgBotToken()
+	token := addTGbot.TakeTgBotToken()
 	bot.TgAPI, err = tgbotapi.NewBotAPI(token)
 	if err != nil {
 		MyErrors.TgBotErr(err)
@@ -42,7 +42,7 @@ func MakeTgBot(ctx context.Context, orChan chan addition.Orders, queChan chan ad
 	return &bot
 }
 
-func (bot *TgBot) SendOrder(orderType TG_bot.OrdersTypes, ticket string) {
+func (bot *TgBot) SendOrder(orderType addTGbot.OrdersTypes, ticket string) {
 	var order addition.Orders
 
 	order.Endpoint = "/api/v3/sendorder"
@@ -53,10 +53,10 @@ func (bot *TgBot) SendOrder(orderType TG_bot.OrdersTypes, ticket string) {
 	dataP["size"] = "1"
 
 	switch orderType {
-	case TG_bot.BuyOrder:
+	case addTGbot.BuyOrder:
 		dataP["side"] = "buy"
 
-	case TG_bot.SellOrder:
+	case addTGbot.SellOrder:
 		dataP["side"] = "sell"
 	}
 
@@ -74,8 +74,8 @@ func (bot *TgBot) SendMessage(message string) {
 	}
 }
 
-func (bot *TgBot) SendMessageID(message string, ID int64) {
-	msg := tgbotapi.NewMessage(ID, message)
+func (bot *TgBot) SendMessageID(message string, id int64) {
+	msg := tgbotapi.NewMessage(id, message)
 	_, err := bot.TgAPI.Send(msg)
 	if err != nil {
 		MyErrors.SendMsgErr(err)

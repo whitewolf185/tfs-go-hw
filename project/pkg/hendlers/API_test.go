@@ -14,7 +14,7 @@ import (
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 	"github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/mock_hendlers"
-	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
 )
 
 func SetUpENV() error {
@@ -52,12 +52,12 @@ func TestAPI_WebsocketConnect(t *testing.T) {
 
 	var (
 		orChan chan addition.Orders
-		dbChan chan add_DB.Query
-		tgChan chan add_DB.Query
+		dbChan chan addDB.Query
+		tgChan chan addDB.Query
 	)
 
 	mockConnect := mock_hendlers.NewMockConnectionService(mockCtrl)
-	testApi := MakeAPI(mockConnect, context.Background(), orChan, dbChan, tgChan)
+	testAPI := MakeAPI(context.Background(), mockConnect, orChan, dbChan, tgChan)
 	wg := sync.WaitGroup{}
 
 	// test 1
@@ -66,28 +66,28 @@ func TestAPI_WebsocketConnect(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	mockConnect.EXPECT().WebConn(testApi.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 404}, errors.New("j")).Times(1)
-	mockConnect.EXPECT().WebConn(testApi.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 200}, nil).Times(1)
-	mockConnect.EXPECT().PingPong(&wg, ctx, &ws).Return().Times(1)
-	got := testApi.WebsocketConnect(&wg)
+	mockConnect.EXPECT().WebConn(testAPI.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 404}, errors.New("j")).Times(1)
+	mockConnect.EXPECT().WebConn(testAPI.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 200}, nil).Times(1)
+	mockConnect.EXPECT().PingPong(ctx, &wg, &ws).Return().Times(1)
+	got := testAPI.WebsocketConnect(&wg)
 	if got != nil {
 		t.Fatalf("wrong output expected %v got %e", nil, got)
 	}
 
 	// test 2
 	t.Log("Test 2")
-	mockConnect.EXPECT().WebConn(testApi.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 200}, nil).Times(1)
-	mockConnect.EXPECT().PingPong(&wg, ctx, &ws).Return().Times(1)
-	got = testApi.WebsocketConnect(&wg)
+	mockConnect.EXPECT().WebConn(testAPI.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 200}, nil).Times(1)
+	mockConnect.EXPECT().PingPong(ctx, &wg, &ws).Return().Times(1)
+	got = testAPI.WebsocketConnect(&wg)
 	if got != nil {
 		t.Fatalf("wrong output expected %v got %e", nil, got)
 	}
 
 	// test 3
 	t.Log("Test 3")
-	mockConnect.EXPECT().WebConn(testApi.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 404}, errors.New("j")).Times(5)
+	mockConnect.EXPECT().WebConn(testAPI.urlWebSocket).Return(&websocket.Conn{}, &http.Response{StatusCode: 404}, errors.New("j")).Times(5)
 
-	got = testApi.WebsocketConnect(&wg)
+	got = testAPI.WebsocketConnect(&wg)
 	if got.Error() != MyErrors.WSConnectErr(errors.New("j")).Error() {
 		t.Fatalf("wrong output expected %e got %e", MyErrors.WSConnectErr(errors.New("j")), got)
 	}
@@ -111,36 +111,36 @@ func TestAPI_GetCandles(t *testing.T) {
 
 	var (
 		orChan chan addition.Orders
-		dbChan chan add_DB.Query
-		tgChan chan add_DB.Query
+		dbChan chan addDB.Query
+		tgChan chan addDB.Query
 	)
 
 	optionChan := make(chan addition.Options)
 
 	mockConnect := mock_hendlers.NewMockConnectionService(mockCtrl)
-	testApi := MakeAPI(mockConnect, context.Background(), orChan, dbChan, tgChan)
+	testAPI := MakeAPI(context.Background(), mockConnect, orChan, dbChan, tgChan)
 	wg := sync.WaitGroup{}
 	ws := websocket.Conn{}
 	options := addition.Options{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	testApi.Ws = &ws
+	testAPI.Ws = &ws
 
 	// test 1
 	t.Log("Get candles test 1")
-	mockConnect.EXPECT().PrepareCandles(&ws, &wg, ctx, options).Return(nil, nil).Times(1)
+	mockConnect.EXPECT().PrepareCandles(ctx, &ws, &wg, options).Return(nil, nil).Times(1)
 	go SetOption(optionChan, 1)
 
-	_, err = testApi.GetCandles(&wg, optionChan)
+	_, err = testAPI.GetCandles(&wg, optionChan)
 	if err != nil {
 		t.Fatalf("Unexpected error on test 2")
 	}
 
 	// test 2
 	t.Log("Get candles test 2")
-	mockConnect.EXPECT().PrepareCandles(&ws, &wg, ctx, options).Return(nil, errors.New("gg")).Times(11)
+	mockConnect.EXPECT().PrepareCandles(ctx, &ws, &wg, options).Return(nil, errors.New("gg")).Times(11)
 	go SetOption(optionChan, 11)
-	_, err = testApi.GetCandles(&wg, optionChan)
+	_, err = testAPI.GetCandles(&wg, optionChan)
 	if err.Error() != errors.New("gg").Error() {
 		t.Fatalf("Unexpected error on test 2")
 	}
@@ -148,8 +148,8 @@ func TestAPI_GetCandles(t *testing.T) {
 	// test 3
 	t.Log("Get candles test 3")
 	close(optionChan)
-	_, err = testApi.GetCandles(&wg, optionChan)
-	if err.Error() != MyErrors.OptionChanErr.Error() {
+	_, err = testAPI.GetCandles(&wg, optionChan)
+	if err.Error() != MyErrors.ErrOptionChanErr.Error() {
 		t.Fatalf("Unexpected error on test 2")
 	}
 }

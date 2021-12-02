@@ -3,9 +3,9 @@ package hendlers
 import (
 	"context"
 	"encoding/json"
-	add_Conn2 "github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
-	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/TG_bot"
-	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
+	add_Conn2 "github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/addConn"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/addTGbot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -15,19 +15,19 @@ import (
 )
 
 func HandStart(ctx context.Context, wg *sync.WaitGroup,
-	orChan chan addition.Orders, optionChan chan addition.Options, DBQueChan chan add_DB.Query, TGQueChan chan add_DB.Query,
-	TGTakeChan chan addition.TakeProfitCh, TGStopChan chan addition.StopLossCh) {
+	orChan chan addition.Orders, optionChan chan addition.Options, dBQueChan chan addDB.Query, tGQueChan chan addDB.Query,
+	tGTakeChan chan addition.TakeProfitCh, tGStopChan chan addition.StopLossCh) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		api := MakeAPI(Connection{}, ctx, orChan, DBQueChan, TGQueChan)
+		api := MakeAPI(ctx, Connection{}, orChan, dBQueChan, tGQueChan)
 		err := api.WebsocketConnect(wg)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer func() {
 			if err := api.Close(); err != nil {
-				MyErrors.BadApiClose(err)
+				MyErrors.BadAPIClose(err)
 			}
 		}()
 
@@ -69,20 +69,19 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 				canClose := add_Conn2.ConvertToFloat(can.Candle.Close)
 
 				if (canClose+canOpen)/2 <= stop.StopFl {
-					api.SendOrder(TG_bot.SellOrder, option.Ticket[0], stop.Size)
+					api.SendOrder(addTGbot.SellOrder, option.Ticket[0], stop.Size)
 				}
 
 				if (canClose+canOpen)/2 >= take.TakeFl {
-					api.SendOrder(TG_bot.BuyOrder, option.Ticket[0], take.Size)
+					api.SendOrder(addTGbot.BuyOrder, option.Ticket[0], take.Size)
 				}
 
-			case stop = <-TGStopChan:
+			case stop = <-tGStopChan:
 				log.Info("New StopLoss is", stop)
 
-			case take = <-TGTakeChan:
+			case take = <-tGTakeChan:
 				log.Info("New TakeProfit is", take)
 			}
-
 		}
 	}()
 }

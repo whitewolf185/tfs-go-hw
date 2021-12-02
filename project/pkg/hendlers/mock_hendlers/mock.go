@@ -13,7 +13,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	websocket "github.com/gorilla/websocket"
 	addition "github.com/whitewolf185/fs-go-hw/project/cmd/addition"
-	add_Conn "github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
+	addConn "github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/addConn"
 )
 
 // MockConnectionService is a mock of ConnectionService interface.
@@ -40,30 +40,30 @@ func (m *MockConnectionService) EXPECT() *MockConnectionServiceMockRecorder {
 }
 
 // PingPong mocks base method.
-func (m *MockConnectionService) PingPong(wg *sync.WaitGroup, ctx context.Context, ws *websocket.Conn) {
+func (m *MockConnectionService) PingPong(ctx context.Context, wg *sync.WaitGroup, ws *websocket.Conn) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "PingPong", wg, ctx, ws)
+	m.ctrl.Call(m, "PingPong", ctx, wg, ws)
 }
 
 // PingPong indicates an expected call of PingPong.
-func (mr *MockConnectionServiceMockRecorder) PingPong(wg, ctx, ws interface{}) *gomock.Call {
+func (mr *MockConnectionServiceMockRecorder) PingPong(ctx, wg, ws interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingPong", reflect.TypeOf((*MockConnectionService)(nil).PingPong), wg, ctx, ws)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingPong", reflect.TypeOf((*MockConnectionService)(nil).PingPong), ctx, wg, ws)
 }
 
 // PrepareCandles mocks base method.
-func (m *MockConnectionService) PrepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) (chan add_Conn.EventMsg, error) {
+func (m *MockConnectionService) PrepareCandles(ctx context.Context, ws *websocket.Conn, wg *sync.WaitGroup, options addition.Options) (chan addConn.EventMsg, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PrepareCandles", ws, wg, ctx, options)
-	ret0, _ := ret[0].(chan add_Conn.EventMsg)
+	ret := m.ctrl.Call(m, "PrepareCandles", ctx, ws, wg, options)
+	ret0, _ := ret[0].(chan addConn.EventMsg)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PrepareCandles indicates an expected call of PrepareCandles.
-func (mr *MockConnectionServiceMockRecorder) PrepareCandles(ws, wg, ctx, options interface{}) *gomock.Call {
+func (mr *MockConnectionServiceMockRecorder) PrepareCandles(ctx, ws, wg, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareCandles", reflect.TypeOf((*MockConnectionService)(nil).PrepareCandles), ws, wg, ctx, options)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareCandles", reflect.TypeOf((*MockConnectionService)(nil).PrepareCandles), ctx, ws, wg, options)
 }
 
 // Unsubscribe mocks base method.

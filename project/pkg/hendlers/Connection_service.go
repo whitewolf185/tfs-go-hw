@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
 	"net/http"
 	"sync"
 	"time"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/addConn"
 )
 
 const (
@@ -35,14 +35,14 @@ type WSMsg struct {
 
 type Connection struct {
 	SubMessage WSMsg
-	Candle     add_Conn.EventMsg
+	Candle     addConn.EventMsg
 
 	ws *websocket.Conn
 }
 
 // candleStream -- функция-обработчик отправки Orders
-func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (chan add_Conn.EventMsg, error) {
-	canChan := make(chan add_Conn.EventMsg)
+func (obj *Connection) candleStream(ctx context.Context, wg *sync.WaitGroup) (chan addConn.EventMsg, error) {
+	canChan := make(chan addConn.EventMsg)
 
 	wg.Add(1)
 	go func() {
@@ -58,7 +58,7 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (ch
 				close(canChan)
 				return
 			default:
-				var event add_Conn.EventMsg
+				var event addConn.EventMsg
 				err := obj.ws.ReadJSON(&event)
 				if err != nil {
 					_ = MyErrors.WSReadMsgErr(errors.New("In cansleStream" + err.Error()))
@@ -67,9 +67,9 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (ch
 				}
 				if event.Result == "error" { // обработчик ошибки отправки order
 					log.Errorln(event)
-				} else if prev[event.ProductId] != event.Candle.Time && event.Candle.Volume != 0 {
+				} else if prev[event.ProductID] != event.Candle.Time && event.Candle.Volume != 0 {
 					canChan <- event
-					prev[event.ProductId] = event.Candle.Time
+					prev[event.ProductID] = event.Candle.Time
 				}
 			}
 		}
@@ -78,7 +78,7 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (ch
 	return canChan, nil
 }
 
-func (obj Connection) PrepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) (chan add_Conn.EventMsg, error) {
+func (obj Connection) PrepareCandles(ctx context.Context, ws *websocket.Conn, wg *sync.WaitGroup, options addition.Options) (chan addConn.EventMsg, error) {
 	obj.SubMessage.Event = "subscribe"
 	obj.SubMessage.Feed = "candles_trade_" + string(options.CanPer)
 	obj.SubMessage.Tickets = options.Ticket
@@ -109,10 +109,10 @@ func (obj Connection) PrepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx
 	}
 	fmt.Println(jsonData)
 	if jsonData.Event != "subscribed" {
-		return nil, MyErrors.SubErr
+		return nil, MyErrors.ErrSub
 	}
 
-	return obj.candleStream(wg, ctx)
+	return obj.candleStream(ctx, wg)
 }
 
 func (obj Connection) WebConn(url string) (*websocket.Conn, *http.Response, error) {
@@ -121,7 +121,7 @@ func (obj Connection) WebConn(url string) (*websocket.Conn, *http.Response, erro
 }
 
 // PingPong функция нужна для того, чтобы организовать heartbeat.
-func (obj Connection) PingPong(wg *sync.WaitGroup, ctx context.Context, ws *websocket.Conn) {
+func (obj Connection) PingPong(ctx context.Context, wg *sync.WaitGroup, ws *websocket.Conn) {
 	wg.Add(1)
 	go func() {
 		ping := time.NewTicker(pingPeriod)
