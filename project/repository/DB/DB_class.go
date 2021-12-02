@@ -2,13 +2,13 @@ package DB
 
 import (
 	"context"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
 
 const OrderQuery = "INSERT INTO operations (ordertime,ticket,type, size, limitprice) VALUES (now(),$1, $2, $3, $4);"

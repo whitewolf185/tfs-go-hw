@@ -2,9 +2,8 @@ package DB
 
 import (
 	"context"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"sync"
-
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
 )
 
 func StartDB(ctx context.Context, wg *sync.WaitGroup) chan add_DB.Query {

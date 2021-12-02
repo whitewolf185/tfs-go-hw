@@ -1,8 +1,9 @@
 package TG_bot
 
 import (
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
 	"testing"
+
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
 
 type Result struct {

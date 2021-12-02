@@ -4,8 +4,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/whitewolf185/fs-go-hw/project/addition"
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
 
 type WSTokens struct {

@@ -2,14 +2,14 @@ package tg_bot
 
 import (
 	"context"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/TG_bot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
-	"github.com/whitewolf185/fs-go-hw/project/addition"
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
-	"github.com/whitewolf185/fs-go-hw/project/addition/TG_bot"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
 
 func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, chan addition.Options, chan add_DB.Query,

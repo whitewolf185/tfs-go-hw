@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
 	"net/http"
 	"sync"
 	"time"
@@ -12,9 +13,8 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/whitewolf185/fs-go-hw/project/addition"
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_Conn"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
 
 const (

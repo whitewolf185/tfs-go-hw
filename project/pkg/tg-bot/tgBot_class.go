@@ -3,15 +3,15 @@ package tg_bot
 import (
 	"context"
 	"fmt"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/TG_bot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"log"
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
-	"github.com/whitewolf185/fs-go-hw/project/addition"
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
-	"github.com/whitewolf185/fs-go-hw/project/addition/TG_bot"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
 
 type TgBot struct {

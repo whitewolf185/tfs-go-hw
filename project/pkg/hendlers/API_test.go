@@ -3,16 +3,18 @@ package hendlers
 import (
 	"context"
 	"errors"
-	"github.com/golang/mock/gomock"
-	"github.com/gorilla/websocket"
-	"github.com/whitewolf185/fs-go-hw/project/addition"
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
-	"github.com/whitewolf185/fs-go-hw/project/hendlers/mock_hendlers"
 	"net/http"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/gorilla/websocket"
+
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/mock_hendlers"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 )
 
 func SetUpENV() error {

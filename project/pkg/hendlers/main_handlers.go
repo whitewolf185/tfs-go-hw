@@ -3,15 +3,15 @@ package hendlers
 import (
 	"context"
 	"encoding/json"
+	add_Conn2 "github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/TG_bot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/whitewolf185/fs-go-hw/project/addition"
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
-	"github.com/whitewolf185/fs-go-hw/project/addition/TG_bot"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_Conn"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
 
 func HandStart(ctx context.Context, wg *sync.WaitGroup,
@@ -54,7 +54,7 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 
 		var stop addition.StopLossCh
 		var take addition.TakeProfitCh
-		var prevCan add_Conn.EventMsg // возможно нужен будет, чтобы провернуть схему, которая нужна, чтобы убрать ошибочное срабатывание
+		var prevCan add_Conn2.EventMsg // возможно нужен будет, чтобы провернуть схему, которая нужна, чтобы убрать ошибочное срабатывание
 		for {
 			select {
 			case <-ctx.Done():
@@ -65,8 +65,8 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 					prevCan = can
 					continue
 				}
-				canOpen := add_Conn.ConvertToFloat(can.Candle.Open)
-				canClose := add_Conn.ConvertToFloat(can.Candle.Close)
+				canOpen := add_Conn2.ConvertToFloat(can.Candle.Open)
+				canClose := add_Conn2.ConvertToFloat(can.Candle.Close)
 
 				if (canClose+canOpen)/2 <= stop.StopFl {
 					api.SendOrder(TG_bot.SellOrder, option.Ticket[0], stop.Size)

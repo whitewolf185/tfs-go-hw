@@ -13,11 +13,11 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/whitewolf185/fs-go-hw/project/addition"
-	"github.com/whitewolf185/fs-go-hw/project/addition/MyErrors"
-	"github.com/whitewolf185/fs-go-hw/project/addition/TG_bot"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_Conn"
-	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/TG_bot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/add_DB"
 )
 
 //go:generate mockgen -source=API.go -destination=mock_hendlers/mock.go
