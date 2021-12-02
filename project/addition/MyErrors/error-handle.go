@@ -17,8 +17,9 @@ var (
 	OptionChanErr    = errors.New("Options channel has closed\n")
 )
 
-func WSConnectErr(err error) {
-	log.Panicf("Problem with WS connect.  Error: %s", err.Error())
+func WSConnectErr(err error) error {
+	str := fmt.Sprintf("Problem with WS connect.  Error: %s", err.Error())
+	return errors.New(str)
 }
 
 func WSReadMsgErr(err error) error {

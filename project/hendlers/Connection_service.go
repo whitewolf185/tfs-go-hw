@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -77,7 +78,7 @@ func (obj *Connection) candleStream(wg *sync.WaitGroup, ctx context.Context) (ch
 	return canChan, nil
 }
 
-func (obj Connection) prepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) (chan add_Conn.EventMsg, error) {
+func (obj Connection) PrepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, options addition.Options) (chan add_Conn.EventMsg, error) {
 	obj.SubMessage.Event = "subscribe"
 	obj.SubMessage.Feed = "candles_trade_" + string(options.CanPer)
 	obj.SubMessage.Tickets = options.Ticket
@@ -114,27 +115,47 @@ func (obj Connection) prepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx
 	return obj.candleStream(wg, ctx)
 }
 
-func (obj Connection) GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context, optionChan chan addition.Options) (chan add_Conn.EventMsg, error) {
-	log.Info("Waiting fot incoming options")
-	option, ok := <-optionChan
-	if !ok {
-		return nil, MyErrors.OptionChanErr
-	}
-	log.Info("Handler caught options")
+func (obj Connection) WebConn(url string) (*websocket.Conn, *http.Response, error) {
+	return websocket.DefaultDialer.Dial(url, http.Header{
+		"Sec-WebSocket-Extensions": []string{"permessage-deflate", "client_max_window_bits"}})
+}
 
-	canChan, err := obj.prepareCandles(ws, wg, ctx, option)
-	for i := 0; err != nil && i < 10; i++ {
-		log.Errorln(err)
-		log.Info("Some err was caught. Waiting fot another incoming options... Try", i)
-		option, ok = <-optionChan
-		if !ok {
-			return nil, MyErrors.OptionChanErr
+// PingPong функция нужна для того, чтобы организовать heartbeat.
+func (obj Connection) PingPong(wg *sync.WaitGroup, ctx context.Context, ws *websocket.Conn) {
+	wg.Add(1)
+	go func() {
+		ping := time.NewTicker(pingPeriod)
+
+		defer func() {
+			ping.Stop()
+			wg.Done()
+		}()
+
+		err := ws.SetReadDeadline(time.Now().Add(pongWait))
+		if err != nil {
+			log.Info("Reconnecting to WS...")
+			return
 		}
-		log.Info("Handler caught options")
-		canChan, err = obj.prepareCandles(ws, wg, ctx, option)
-	}
+		ws.SetPongHandler(func(string) error {
+			err := ws.SetReadDeadline(time.Now().Add(pongWait))
+			if err != nil {
+				log.Info("Reconnecting to WS...")
+				return err
+			}
+			return nil
+		})
 
-	return canChan, err
+		for {
+			select {
+			case <-ping.C:
+				if err := ws.WriteMessage(websocket.PingMessage, nil); err != nil {
+					MyErrors.PingErr(err)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 }
 
 func (obj Connection) Unsubscribe(ws *websocket.Conn) error {

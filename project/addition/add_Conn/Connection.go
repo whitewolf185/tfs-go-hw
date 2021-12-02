@@ -44,6 +44,7 @@ func ConvertToFloat(price string) float32 {
 	result, err := strconv.ParseFloat(price, 32)
 	if err != nil {
 		MyErrors.ConvertErr(err)
+		return -1
 	}
 
 	return float32(result)

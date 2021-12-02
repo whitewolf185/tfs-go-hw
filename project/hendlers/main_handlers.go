@@ -21,7 +21,10 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 	go func() {
 		defer wg.Done()
 		api := MakeAPI(Connection{}, ctx, orChan, DBQueChan, TGQueChan)
-		api.WebsocketConnect(wg)
+		err := api.WebsocketConnect(wg)
+		if err != nil {
+			log.Fatal(err)
+		}
 		defer func() {
 			if err := api.Close(); err != nil {
 				MyErrors.BadApiClose(err)
@@ -42,7 +45,7 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 			return
 		}
 		log.Info("Handler caught options")
-		canChan, err := api.connServ.GetCandles(api.Ws, wg, api.Ctx, optionChan)
+		canChan, err := api.GetCandles(wg, optionChan)
 		if err != nil {
 			MyErrors.GetCandlesErr()
 		}

@@ -2,10 +2,6 @@ package hendlers
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,18 +20,13 @@ import (
 	"github.com/whitewolf185/fs-go-hw/project/addition/add_DB"
 )
 
-type GetterCan interface {
-	GetCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context,
-		options chan addition.Options) (chan add_Conn.EventMsg, error)
-}
-
-type Unsubscriber interface {
+//go:generate mockgen -source=API.go -destination=mock_hendlers/mock.go
+type ConnectionService interface {
+	PrepareCandles(ws *websocket.Conn, wg *sync.WaitGroup, ctx context.Context,
+		options addition.Options) (chan add_Conn.EventMsg, error)
 	Unsubscribe(ws *websocket.Conn) error
-}
-
-type connectionService interface {
-	GetterCan
-	Unsubscriber
+	WebConn(url string) (*websocket.Conn, *http.Response, error)
+	PingPong(wg *sync.WaitGroup, ctx context.Context, ws *websocket.Conn)
 }
 
 type API struct {
@@ -46,14 +37,14 @@ type API struct {
 	Ws       *websocket.Conn
 	Ctx      context.Context
 	cancel   context.CancelFunc
-	connServ connectionService
+	connServ ConnectionService
 
 	orChan    chan addition.Orders
 	dBQueChan chan add_DB.Query
 	tgQueChan chan add_DB.Query
 }
 
-func MakeAPI(service connectionService, ctx context.Context,
+func MakeAPI(service ConnectionService, ctx context.Context,
 	orChan chan addition.Orders, dbChan, tgChan chan add_DB.Query) *API {
 	var api API
 	tokens := add_Conn.TakeAPITokens()
@@ -70,93 +61,28 @@ func MakeAPI(service connectionService, ctx context.Context,
 	return &api
 }
 
-func (obj *API) generateAuthent(PostData, endpontPath string) (string, error) {
-	// step 1 and 2
-	sha := sha256.New()
-	src := PostData + endpontPath
-	sha.Write([]byte(src))
-
-	// step 3
-	apiDecode, err := base64.StdEncoding.DecodeString(obj.apiKeyPrivate)
-	if err != nil {
-		return "", err
-	}
-
-	// step 4
-	h := hmac.New(sha512.New, apiDecode)
-	h.Write(sha.Sum(nil))
-
-	// step 5
-	result := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
-	return result, nil
-}
-
-func (obj *API) webConn() (*websocket.Conn, *http.Response, error) {
-	return websocket.DefaultDialer.Dial(obj.urlWebSocket, http.Header{
-		"Sec-WebSocket-Extensions": []string{"permessage-deflate", "client_max_window_bits"}})
-}
-
-func (obj *API) WebsocketConnect(wg *sync.WaitGroup) {
-	ws, res, err := obj.webConn()
+func (obj *API) WebsocketConnect(wg *sync.WaitGroup) error {
+	ws, res, err := obj.connServ.WebConn(obj.urlWebSocket)
 	if err != nil {
 		if res.StatusCode == 404 {
 			for i := 0; i < 4 && err != nil; i++ { // 4 попытки подключиться к вебсокету с интервалом в 5 секунд
 				log.Println("trying to connect to WebSocket. Try", i+1)
 				time.Sleep(time.Second * 5)
-				ws, res, err = obj.webConn()
+				ws, res, err = obj.connServ.WebConn(obj.urlWebSocket)
 			}
 		}
 	}
 
 	if err != nil {
-		MyErrors.WSConnectErr(err)
+		return MyErrors.WSConnectErr(err)
 	}
 
 	obj.Ws = ws
 
 	log.Info("Connecting successful")
 
-	obj.PingPong(wg)
-}
-
-// PingPong функция нужна для того, чтобы организовать heartbeat.
-func (obj *API) PingPong(wg *sync.WaitGroup) {
-	wg.Add(1)
-	go func() {
-		ping := time.NewTicker(pingPeriod)
-
-		defer func() {
-			ping.Stop()
-			wg.Done()
-		}()
-
-		err := obj.Ws.SetReadDeadline(time.Now().Add(pongWait))
-		if err != nil {
-			// TODO тут надо делать реконнект
-			panic(err)
-		}
-		obj.Ws.SetPongHandler(func(string) error {
-			err := obj.Ws.SetReadDeadline(time.Now().Add(pongWait))
-			if err != nil {
-				// TODO тут надо делать реконнект
-				panic(err)
-			}
-			return nil
-		})
-
-		for {
-			select {
-			case <-ping.C:
-				if err := obj.Ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-					MyErrors.PingErr(err)
-				}
-			case <-obj.Ctx.Done():
-				return
-			}
-		}
-	}()
-
+	obj.connServ.PingPong(wg, obj.Ctx, obj.Ws)
+	return nil
 }
 
 // SendOrder формирует заказ на покупку валюты, чтобы затем отправить по каналу addition.Orders
@@ -203,9 +129,9 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 					Path:   "derivatives",
 				}
 				u.Path += order.Endpoint
-				obj.makeQuery(&u, order.PostData)
-				PostData := obj.makePostData(order.PostData)
-				authent, err := obj.generateAuthent(PostData, order.Endpoint)
+				add_Conn.MakeQuery(&u, order.PostData)
+				PostData := add_Conn.MakePostData(order.PostData)
+				authent, err := add_Conn.GenerateAuthent(PostData, order.Endpoint, obj.apiKeyPrivate)
 				fmt.Println(authent)
 				if err != nil {
 					MyErrors.APIGenerateErr(err)
@@ -254,23 +180,27 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 	}()
 }
 
-// TODO эту функцию можно протестировать
-func (obj *API) makePostData(data map[string]string) string {
-	values := url.Values{}
+func (obj *API) GetCandles(wg *sync.WaitGroup, optionChan chan addition.Options) (chan add_Conn.EventMsg, error) {
+	log.Info("Waiting fot incoming options")
+	option, ok := <-optionChan
+	if !ok {
+		return nil, MyErrors.OptionChanErr
+	}
+	log.Info("Handler caught options")
 
-	for argument, value := range data {
-		values.Add(argument, value)
+	canChan, err := obj.connServ.PrepareCandles(obj.Ws, wg, obj.Ctx, option)
+	for i := 0; err != nil && i < 10; i++ {
+		log.Errorln(err)
+		log.Info("Some err was caught. Waiting fot another incoming options... Try", i)
+		option, ok = <-optionChan
+		if !ok {
+			return nil, MyErrors.OptionChanErr
+		}
+		log.Info("Handler caught options")
+		canChan, err = obj.connServ.PrepareCandles(obj.Ws, wg, obj.Ctx, option)
 	}
 
-	return values.Encode()
-}
-
-func (obj *API) makeQuery(u *url.URL, data map[string]string) {
-	q := u.Query()
-	for argument, value := range data {
-		q.Set(argument, value)
-	}
-	u.RawQuery = q.Encode()
+	return canChan, err
 }
 
 func (obj *API) Close() error {
