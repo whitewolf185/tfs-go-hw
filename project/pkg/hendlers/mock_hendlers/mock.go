@@ -6,14 +6,14 @@ package mock_hendlers
 
 import (
 	context "context"
-	"github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
 	http "net/http"
 	reflect "reflect"
 	sync "sync"
 
 	gomock "github.com/golang/mock/gomock"
 	websocket "github.com/gorilla/websocket"
-	addition "github.com/whitewolf185/fs-go-hw/project/addition"
+	addition "github.com/whitewolf185/fs-go-hw/project/cmd/addition"
+	add_Conn "github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/add_Conn"
 )
 
 // MockConnectionService is a mock of ConnectionService interface.
