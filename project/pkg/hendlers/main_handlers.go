@@ -69,10 +69,12 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 				canClose := add_Conn2.ConvertToFloat(can.Candle.Close)
 
 				if (canClose+canOpen)/2 <= stop.StopFl {
+					stop.StopFl = 0
 					api.SendOrder(addTGbot.SellOrder, option.Ticket[0], stop.Size)
 				}
 
 				if (canClose+canOpen)/2 >= take.TakeFl {
+					take.TakeFl = 0
 					api.SendOrder(addTGbot.BuyOrder, option.Ticket[0], take.Size)
 				}
 
