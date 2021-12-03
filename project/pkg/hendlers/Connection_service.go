@@ -68,6 +68,7 @@ func (obj *Connection) candleStream(ctx context.Context, wg *sync.WaitGroup) (ch
 				if event.Result == "error" { // обработчик ошибки отправки order
 					log.Errorln(event)
 				} else if prev[event.ProductID] != event.Candle.Time && event.Candle.Volume != 0 {
+					fmt.Println(event)
 					canChan <- event
 					prev[event.ProductID] = event.Candle.Time
 				}
@@ -78,7 +79,8 @@ func (obj *Connection) candleStream(ctx context.Context, wg *sync.WaitGroup) (ch
 	return canChan, nil
 }
 
-func (obj Connection) PrepareCandles(ctx context.Context, ws *websocket.Conn, wg *sync.WaitGroup, options addition.Options) (chan addConn.EventMsg, error) {
+func (obj Connection) PrepareCandles(ctx context.Context, ws *websocket.Conn, wg *sync.WaitGroup,
+	options addition.Options) (chan addConn.EventMsg, error) {
 	obj.SubMessage.Event = "subscribe"
 	obj.SubMessage.Feed = "candles_trade_" + string(options.CanPer)
 	obj.SubMessage.Tickets = options.Ticket
@@ -133,13 +135,13 @@ func (obj Connection) PingPong(ctx context.Context, wg *sync.WaitGroup, ws *webs
 
 		err := ws.SetReadDeadline(time.Now().Add(pongWait))
 		if err != nil {
-			log.Info("Reconnecting to WS...")
+			log.Info("Reconnect to WS, please")
 			return
 		}
 		ws.SetPongHandler(func(string) error {
 			err := ws.SetReadDeadline(time.Now().Add(pongWait))
 			if err != nil {
-				log.Info("Reconnecting to WS...")
+				log.Info("Reconnect to WS, please")
 				return err
 			}
 			return nil

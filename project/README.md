@@ -49,6 +49,3 @@ TG_BOT_TOKEN=D:/GO/tfs-go-hw/project/non-project-files/testing_tg.txt
 **Поддерживаемые индикаторы:**
 * _stoploss_. Исполняется командой `/stoploss`
 * _takeprofit_. Исполняется командой `/takeprofit`
-
-
-## Краткое описание проекта

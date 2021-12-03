@@ -7,36 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestsConvert struct {
-	Name     string
-	In       string
-	Expected float32
-}
-
-func TestConvertToFloat(t *testing.T) {
-	tests := []TestsConvert{
-		{
-			"OK",
-			"23467.3",
-			23467.3,
-		},
-
-		{
-			"Not a number",
-			"234ad67.3",
-			-1,
-		},
-	}
-
-	for idx, test := range tests {
-		got := ConvertToFloat(test.In)
-
-		if got != test.Expected {
-			t.Errorf("Test %d expected %f got %f", idx, test.Expected, got)
-		}
-	}
-}
-
 func SetUpENV() error {
 	err := os.Setenv("TG_BOT_TOKEN", "D:/Documents/GO_projects/tfs-go-hw/project/cmd/config/tgBot_token.txt")
 	if err != nil {

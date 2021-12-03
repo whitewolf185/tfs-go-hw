@@ -3,15 +3,15 @@ package hendlers
 import (
 	"context"
 	"encoding/json"
-	add_Conn2 "github.com/whitewolf185/fs-go-hw/project/pkg/hendlers/addConn"
-	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/addTGbot"
-	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
+	"math"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
+	"github.com/whitewolf185/fs-go-hw/project/pkg/tg-bot/addTGbot"
+	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
 )
 
 func HandStart(ctx context.Context, wg *sync.WaitGroup,
@@ -47,28 +47,35 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 		api.OrderListener(wg)
 
 		var stop addition.StopLossCh
-		var take addition.TakeProfitCh
-		var prevCan add_Conn2.EventMsg // возможно нужен будет, чтобы провернуть схему, которая нужна, чтобы убрать ошибочное срабатывание
+		take := addition.TakeProfitCh{
+			TakeFl: math.MaxFloat32,
+		}
 		for {
 			select {
 			case <-ctx.Done():
 				return
 
 			case can := <-canChan:
-				if prevCan.Candle.Time == 0 {
-					prevCan = can
+				canOpen, err := addition.ConvertToFloat(can.Candle.Open)
+				if err != nil {
+					log.Error(err)
 					continue
 				}
-				canOpen := add_Conn2.ConvertToFloat(can.Candle.Open)
-				canClose := add_Conn2.ConvertToFloat(can.Candle.Close)
+				canClose, err := addition.ConvertToFloat(can.Candle.Close)
+				if err != nil {
+					log.Error(err)
+					continue
+				}
 
 				if (canClose+canOpen)/2 <= stop.StopFl {
 					stop.StopFl = 0
+					log.Info("Indicator stoploss has gone off")
 					api.SendOrder(addTGbot.SellOrder, option.Ticket[0], stop.Size)
 				}
 
 				if (canClose+canOpen)/2 >= take.TakeFl {
-					take.TakeFl = 0
+					take.TakeFl = math.MaxFloat32
+					log.Info("Indicator takeprofit has gone off")
 					api.SendOrder(addTGbot.BuyOrder, option.Ticket[0], take.Size)
 				}
 

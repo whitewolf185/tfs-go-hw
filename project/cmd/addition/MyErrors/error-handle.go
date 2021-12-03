@@ -112,6 +112,7 @@ func SendMsgErr(err error) {
 	log.Errorf("Message has not sent.  Error: %s", err)
 }
 
-func ConvertErr(err error) {
-	log.Errorf("Something wrong with convert.  Error: %s", err)
+func ConvertErr(err error) error {
+	str := fmt.Sprintf("Something wrong with convert.  Error: %s", err)
+	return errors.New(str)
 }

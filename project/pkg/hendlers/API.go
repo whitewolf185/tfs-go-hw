@@ -188,7 +188,7 @@ func (obj *API) GetCandles(wg *sync.WaitGroup, optionChan chan addition.Options)
 	log.Info("Handler caught options")
 
 	canChan, err := obj.connServ.PrepareCandles(obj.Ctx, obj.Ws, wg, option)
-	for i := 0; err != nil && i < 10; i++ {
+	for i := 1; err != nil && i < 11; i++ {
 		log.Errorln(err)
 		log.Info("Some err was caught. Waiting fot another incoming options... Try", i)
 		option, ok = <-optionChan

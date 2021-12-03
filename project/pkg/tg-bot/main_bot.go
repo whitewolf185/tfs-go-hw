@@ -2,6 +2,7 @@ package tgBot
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -95,14 +96,56 @@ func BotStart(ctx context.Context, wg *sync.WaitGroup) (chan addition.Orders, ch
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
+					tgBot.SendMessage("Напишите цену срабатывания индикатора")
+					msg := <-updates
+					cost, err := addition.ConvertToFloat(msg.Message.Text)
+					if err != nil {
+						tgBot.SendMessage("Вы неправильно ввели значение. Введите команду /stoploss повторно и повторите попытку")
+						continue
+					}
 
-					// todo нужно запрашивать цену и сколько продавать
+					tgBot.SendMessage("Напишите количество продаж")
+					msg = <-updates
+					size, err := strconv.Atoi(msg.Message.Text)
+					if err != nil {
+						tgBot.SendMessage("Вы неправильно ввели значение. Введите команду /stoploss повторно и повторите попытку")
+						continue
+					}
+
+					stop := addition.StopLossCh{
+						StopFl: cost,
+						Size:   size,
+					}
+
+					stopChan <- stop
+
 				case addTGbot.TakeProfit:
 					if tgBot.checkOption(option, &started) {
 						continue
 					}
 
-					// todo нужно запрашивать цену и сколько продавать
+					tgBot.SendMessage("Напишите цену срабатывания индикатора")
+					msg := <-updates
+					cost, err := addition.ConvertToFloat(msg.Message.Text)
+					if err != nil {
+						tgBot.SendMessage("Вы неправильно ввели значение. Введите команду /takeprofit повторно и повторите попытку")
+						continue
+					}
+
+					tgBot.SendMessage("Напишите количество продаж")
+					msg = <-updates
+					size, err := strconv.Atoi(msg.Message.Text)
+					if err != nil {
+						tgBot.SendMessage("Вы неправильно ввели значение. Введите команду /takeprofit повторно и повторите попытку")
+						continue
+					}
+
+					take := addition.TakeProfitCh{
+						TakeFl: cost,
+						Size:   size,
+					}
+
+					takeChan <- take
 				}
 
 			case <-ctx.Done():

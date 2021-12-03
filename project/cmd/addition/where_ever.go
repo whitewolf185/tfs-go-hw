@@ -3,6 +3,7 @@ package addition
 import (
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
 )
@@ -49,4 +50,11 @@ func ENVParser(env string) string {
 	}
 
 	return string(token)
+}
+func ConvertToFloat(price string) (float32, error) {
+	result, err := strconv.ParseFloat(price, 32)
+	if err != nil {
+		return -1, MyErrors.ConvertErr(err)
+	}
+	return float32(result), nil
 }

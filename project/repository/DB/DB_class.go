@@ -42,7 +42,6 @@ func (db *DataBase) Close() {
 }
 
 func (db *DataBase) Connect() error {
-	// TODO можно потестировать подключение к БД
 	var err error
 	dsn := "postgres://postgres:kukuruza@localhost:5433/postgres"
 

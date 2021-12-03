@@ -2,7 +2,6 @@ package addConn
 
 import (
 	"os"
-	"strconv"
 
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition"
 	"github.com/whitewolf185/fs-go-hw/project/cmd/addition/MyErrors"
@@ -38,14 +37,4 @@ func TakeAPITokens() WSTokens {
 	}
 
 	return result
-}
-
-func ConvertToFloat(price string) float32 {
-	result, err := strconv.ParseFloat(price, 32)
-	if err != nil {
-		MyErrors.ConvertErr(err)
-		return -1
-	}
-
-	return float32(result)
 }
