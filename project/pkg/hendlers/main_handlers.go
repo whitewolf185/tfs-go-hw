@@ -39,13 +39,7 @@ func HandStart(ctx context.Context, wg *sync.WaitGroup,
 		_ = json.Unmarshal(data, &jsonData)
 		log.Info(jsonData)
 
-		log.Info("Waiting fot incoming options")
-		option, ok := <-optionChan
-		if !ok {
-			return
-		}
-		log.Info("Handler caught options")
-		canChan, err := api.GetCandles(wg, optionChan)
+		canChan, option, err := api.GetCandles(wg, optionChan)
 		if err != nil {
 			MyErrors.GetCandlesErr()
 		}

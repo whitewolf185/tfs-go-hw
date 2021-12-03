@@ -3,7 +3,6 @@ package hendlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -132,7 +131,7 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 				addConn.MakeQuery(&u, order.PostData)
 				PostData := addConn.MakePostData(order.PostData)
 				authent, err := addConn.GenerateAuthent(PostData, order.Endpoint, obj.apiKeyPrivate)
-				fmt.Println(authent)
+
 				if err != nil {
 					MyErrors.APIGenerateErr(err)
 				}
@@ -180,11 +179,11 @@ func (obj *API) OrderListener(wg *sync.WaitGroup) {
 	}()
 }
 
-func (obj *API) GetCandles(wg *sync.WaitGroup, optionChan chan addition.Options) (chan addConn.EventMsg, error) {
+func (obj *API) GetCandles(wg *sync.WaitGroup, optionChan chan addition.Options) (chan addConn.EventMsg, addition.Options, error) {
 	log.Info("Waiting fot incoming options")
 	option, ok := <-optionChan
 	if !ok {
-		return nil, MyErrors.ErrOptionChanErr
+		return nil, option, MyErrors.ErrOptionChanErr
 	}
 	log.Info("Handler caught options")
 
@@ -194,13 +193,13 @@ func (obj *API) GetCandles(wg *sync.WaitGroup, optionChan chan addition.Options)
 		log.Info("Some err was caught. Waiting fot another incoming options... Try", i)
 		option, ok = <-optionChan
 		if !ok {
-			return nil, MyErrors.ErrOptionChanErr
+			return nil, option, MyErrors.ErrOptionChanErr
 		}
 		log.Info("Handler caught options")
 		canChan, err = obj.connServ.PrepareCandles(obj.Ctx, obj.Ws, wg, option)
 	}
 
-	return canChan, err
+	return canChan, option, err
 }
 
 func (obj *API) Close() error {

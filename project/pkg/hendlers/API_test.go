@@ -131,7 +131,7 @@ func TestAPI_GetCandles(t *testing.T) {
 	mockConnect.EXPECT().PrepareCandles(ctx, &ws, &wg, options).Return(nil, nil).Times(1)
 	go SetOption(optionChan, 1)
 
-	_, err = testAPI.GetCandles(&wg, optionChan)
+	_, _, err = testAPI.GetCandles(&wg, optionChan)
 	if err != nil {
 		t.Fatalf("Unexpected error on test 2")
 	}
@@ -140,7 +140,7 @@ func TestAPI_GetCandles(t *testing.T) {
 	t.Log("Get candles test 2")
 	mockConnect.EXPECT().PrepareCandles(ctx, &ws, &wg, options).Return(nil, errors.New("gg")).Times(11)
 	go SetOption(optionChan, 11)
-	_, err = testAPI.GetCandles(&wg, optionChan)
+	_, _, err = testAPI.GetCandles(&wg, optionChan)
 	if err.Error() != errors.New("gg").Error() {
 		t.Fatalf("Unexpected error on test 2")
 	}
@@ -148,7 +148,7 @@ func TestAPI_GetCandles(t *testing.T) {
 	// test 3
 	t.Log("Get candles test 3")
 	close(optionChan)
-	_, err = testAPI.GetCandles(&wg, optionChan)
+	_, _, err = testAPI.GetCandles(&wg, optionChan)
 	if err.Error() != MyErrors.ErrOptionChanErr.Error() {
 		t.Fatalf("Unexpected error on test 2")
 	}
