@@ -1,7 +1,2 @@
 .idea/
 bin/
-
-*.csv
-*.ini
-/lesson2/out.json
-/project/non-project-files/
