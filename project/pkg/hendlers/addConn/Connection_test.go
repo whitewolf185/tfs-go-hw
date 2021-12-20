@@ -1,14 +1,25 @@
 package addConn
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	_, b, _, _ = runtime.Caller(0)
+
+	// Root folder of this project
+	Root = filepath.ToSlash(filepath.Join(filepath.Dir(b), "../../.."))
+)
+
 func SetUpENV() error {
-	err := os.Setenv("TG_BOT_TOKEN", "D:/Documents/GO_projects/tfs-go-hw/project/cmd/config/tgBot_token.txt")
+	fmt.Println(Root)
+	err := os.Setenv("TG_BOT_TOKEN", Root+"/cmd/config/tgBot_token_test.txt")
 	if err != nil {
 		return err
 	}
@@ -18,12 +29,12 @@ func SetUpENV() error {
 		return err
 	}
 
-	err = os.Setenv("TOKEN_PATH_PUBLIC", "D:/Documents/GO_projects/tfs-go-hw/project/cmd/config/public-token_test.txt")
+	err = os.Setenv("TOKEN_PATH_PUBLIC", Root+"/cmd/config/public-token_test.txt")
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv("TOKEN_PATH_PRIVATE", "D:/Documents/GO_projects/tfs-go-hw/project/cmd/config/private-token_test.txt")
+	err = os.Setenv("TOKEN_PATH_PRIVATE", Root+"/cmd/config/private-token_test.txt")
 	if err != nil {
 		return err
 	}

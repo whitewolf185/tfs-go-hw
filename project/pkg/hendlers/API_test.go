@@ -3,8 +3,11 @@ package hendlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -17,8 +20,16 @@ import (
 	"github.com/whitewolf185/fs-go-hw/project/repository/DB/addDB"
 )
 
+var (
+	_, b, _, _ = runtime.Caller(0)
+
+	// Root folder of this project
+	Root = filepath.ToSlash(filepath.Join(filepath.Dir(b), "../.."))
+)
+
 func SetUpENV() error {
-	err := os.Setenv("TG_BOT_TOKEN", "D:/Documents/GO_projects/tfs-go-hw/project/cmd/config/tgBot_token.txt")
+	fmt.Println(Root)
+	err := os.Setenv("TG_BOT_TOKEN", Root+"/cmd/config/tgBot_token_test.txt")
 	if err != nil {
 		return err
 	}
@@ -28,12 +39,12 @@ func SetUpENV() error {
 		return err
 	}
 
-	err = os.Setenv("TOKEN_PATH_PUBLIC", "D:/Documents/GO_projects/tfs-go-hw/project/cmd/config/public-token.txt")
+	err = os.Setenv("TOKEN_PATH_PUBLIC", Root+"/cmd/config/public-token_test.txt")
 	if err != nil {
 		return err
 	}
 
-	err = os.Setenv("TOKEN_PATH_PRIVATE", "D:/Documents/GO_projects/tfs-go-hw/project/cmd/config/private-token.txt")
+	err = os.Setenv("TOKEN_PATH_PRIVATE", Root+"/cmd/config/private-token_test.txt")
 	if err != nil {
 		return err
 	}
@@ -41,6 +52,7 @@ func SetUpENV() error {
 	return nil
 }
 
+// D:\GO\tfs-go-hw\project\cmd\config\private-token_test.txt
 func TestAPI_WebsocketConnect(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
